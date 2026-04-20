@@ -29,51 +29,30 @@ export default function AppShell({ children, activeTab, onTabChange, user, onSig
 
       <div className="relative">
         <header className="sticky top-0 z-30 border-b border-zinc-200/80 bg-white/75 shadow-sm shadow-zinc-950/5 backdrop-blur-xl backdrop-saturate-150 print:hidden">
-          <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
-            <div className="flex min-w-0 items-center gap-3.5">
-              <div
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-brand-600 to-brand-800 text-sm font-bold tracking-tight text-white shadow-lg shadow-brand-600/30 ring-1 ring-white/20"
-                aria-hidden
-              >
-                PS
-              </div>
-              <div className="min-w-0">
-                <p className="font-display text-base font-semibold tracking-tight text-zinc-900">
-                  PlayIQ
-                </p>
-                <p className="truncate text-xs font-medium text-zinc-500">
-                  Opponent planning & gameplan system
-                </p>
-              </div>
-            </div>
-            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
-              {typeof activeTab === "string" && onTabChange ? (
-                <nav
-                  className="flex w-full rounded-full border border-zinc-200/90 bg-zinc-100/90 p-1 shadow-inner sm:w-auto"
-                  aria-label="Primary"
+          <div className="mx-auto max-w-7xl px-4 pt-3 sm:px-6 lg:px-8">
+            {/* Brand + account — single row; tabs live below so they don’t compete for width */}
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex min-w-0 items-center gap-3">
+                <div
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-brand-600 to-brand-800 text-sm font-bold tracking-tight text-white shadow-lg shadow-brand-600/30 ring-1 ring-white/20"
+                  aria-hidden
                 >
-                  {TABS.map((t) => {
-                    const on = activeTab === t.id;
-                    return (
-                      <button
-                        key={t.id}
-                        type="button"
-                        onClick={() => onTabChange(t.id)}
-                        className={`flex-1 rounded-full px-4 py-2.5 text-center text-sm font-semibold transition-all duration-200 sm:flex-none sm:min-w-[10rem] ${
-                          on
-                            ? "bg-white text-zinc-900 shadow-card-sm ring-1 ring-zinc-200/90"
-                            : "text-zinc-600 hover:text-zinc-900"
-                        }`}
-                      >
-                        {t.label}
-                      </button>
-                    );
-                  })}
-                </nav>
-              ) : null}
+                  PS
+                </div>
+                <div className="min-w-0">
+                  <p className="font-display text-base font-semibold tracking-tight text-zinc-900">
+                    PlayIQ
+                  </p>
+                  <p className="truncate text-xs font-medium text-zinc-500">
+                    Opponent planning & gameplan system
+                  </p>
+                </div>
+              </div>
               {user ? (
-                <div className="flex items-center justify-end gap-2 text-xs font-medium text-zinc-500">
-                  <span className="truncate">{user.full_name || user.email}</span>
+                <div className="flex shrink-0 items-center gap-2 text-xs font-medium text-zinc-500">
+                  <span className="max-w-[7rem] truncate sm:max-w-[12rem]" title={user.full_name || user.email}>
+                    {user.full_name || user.email}
+                  </span>
                   {onSignOut ? (
                     <button
                       type="button"
@@ -86,6 +65,38 @@ export default function AppShell({ children, activeTab, onTabChange, user, onSig
                 </div>
               ) : null}
             </div>
+
+            {typeof activeTab === "string" && onTabChange ? (
+              <nav
+                className="-mx-4 mt-3 border-t border-zinc-200/80 px-4 pb-3 pt-3 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8"
+                aria-label="Primary"
+              >
+                <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
+                  Workspace
+                </p>
+                <div className="flex gap-1 overflow-x-auto overscroll-x-contain pb-1 [-ms-overflow-style:none] [scrollbar-width:thin] [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-zinc-300/80">
+                  <div className="flex min-w-min gap-1 rounded-2xl border border-zinc-200/90 bg-zinc-100/90 p-1 shadow-inner">
+                    {TABS.map((t) => {
+                      const on = activeTab === t.id;
+                      return (
+                        <button
+                          key={t.id}
+                          type="button"
+                          onClick={() => onTabChange(t.id)}
+                          className={`shrink-0 whitespace-nowrap rounded-full px-3 py-2 text-left text-xs font-semibold transition-all duration-200 sm:px-3.5 sm:text-sm ${
+                            on
+                              ? "bg-white text-zinc-900 shadow-card-sm ring-1 ring-zinc-200/90"
+                              : "text-zinc-600 hover:bg-white/60 hover:text-zinc-900"
+                          }`}
+                        >
+                          {t.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </nav>
+            ) : null}
           </div>
         </header>
 
