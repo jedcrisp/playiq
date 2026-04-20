@@ -73,6 +73,19 @@ function clearOauthPending() {
   }
 }
 
+function oauthRecoveryHintForCurrentHost() {
+  if (typeof window === "undefined") {
+    return "Use the same site address as when you started, then try again.";
+  }
+  const { protocol, host, hostname } = window.location;
+  const hostUrl = `${protocol}//${host}`;
+  if (hostname.startsWith("www.")) {
+    const apex = hostname.slice(4);
+    return `Use the same site address as when you started (for example always ${hostUrl} or always ${protocol}//${apex}), then try again.`;
+  }
+  return `Use the same site address as when you started (for example always ${hostUrl} or always ${protocol}//www.${hostname}), then try again.`;
+}
+
 /**
  * After redirect, Firebase sometimes attaches currentUser a tick after getRedirectResult() is still null.
  */
@@ -132,9 +145,7 @@ export async function consumeGoogleRedirectIdToken() {
 
       if (pending) {
         clearOauthPending();
-        lastOAuthRecoveryMessage =
-          "Google sign-in did not finish in this tab. Use the same site address as when you started " +
-          "(for example always https://www.getplayiq.app or always https://getplayiq.app), then try again.";
+        lastOAuthRecoveryMessage = `Google sign-in did not finish in this tab. ${oauthRecoveryHintForCurrentHost()}`;
       }
 
       return null;
