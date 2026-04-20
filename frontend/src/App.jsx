@@ -23,41 +23,19 @@ import ScriptBuilderPage from "./pages/ScriptBuilderPage.jsx";
 import SituationalPlanningPage from "./pages/SituationalPlanningPage.jsx";
 import GameDayViewPage from "./pages/GameDayViewPage.jsx";
 import {
-  createReportNote,
-  createScript,
-  createScriptEntry,
-  createScoutingPlay,
-  createSituationCall,
-  createSituationPlan,
   createTeam,
-  deleteScript,
-  deleteScriptEntry,
-  deleteScoutingPlay,
-  deleteSituationCall,
-  deleteSituationPlan,
   fetchOptions,
   fetchRecommend,
   generateAISummary,
   getFormationIntelligence,
   getOpponentAnalytics,
   getOpponentBridgeSummary,
-  getScoutingTemplate,
   getSelfScoutAnalytics,
-  importScoutingCSV,
   joinTeam,
   listMemberships,
-  listScoutingPlays,
-  listScriptEntries,
-  listScripts,
-  listSituationCalls,
-  listSituationPlans,
   listTeams,
-  reorderScriptEntries,
   runMatchupAnalysis,
   sendCoachingChat,
-  updateScriptEntry,
-  updateScoutingPlay,
-  updateSituationCall,
 } from "./lib/api.js";
 import {
   createGameplan,
@@ -77,6 +55,34 @@ import {
   listDiagrams,
   updateDiagramById,
 } from "./lib/firestoreDiagrams.js";
+import {
+  createScoutingPlay,
+  deleteScoutingPlay,
+  getScoutingTemplate,
+  importScoutingCSV,
+  listScoutingPlays,
+  updateScoutingPlay,
+} from "./lib/firestoreScouting.js";
+import {
+  createScript,
+  createScriptEntry,
+  deleteScript,
+  deleteScriptEntry,
+  listScriptEntries,
+  listScripts,
+  reorderScriptEntries,
+  updateScriptEntry,
+} from "./lib/firestoreScripts.js";
+import {
+  createSituationCall,
+  createSituationPlan,
+  deleteSituationCall,
+  deleteSituationPlan,
+  listSituationCalls,
+  listSituationPlans,
+  updateSituationCall,
+} from "./lib/firestoreSituations.js";
+import { createReportNote } from "./lib/firestoreReportNotes.js";
 import { selectDiagramsForInstall } from "./lib/diagramStorage.js";
 import { tendenciesToFormValues } from "./lib/opponentStorage.js";
 

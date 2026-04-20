@@ -41,7 +41,19 @@ service cloud.firestore {
       allow create: if isCreatingOwner("owner_uid");
       allow read, update, delete: if isOwner("owner_uid");
     }
+    match /script_entries/{id} {
+      allow create: if isCreatingOwner("owner_uid");
+      allow read, update, delete: if isOwner("owner_uid");
+    }
     match /situation_plans/{id} {
+      allow create: if isCreatingOwner("owner_uid");
+      allow read, update, delete: if isOwner("owner_uid");
+    }
+    match /situation_calls/{id} {
+      allow create: if isCreatingOwner("owner_uid");
+      allow read, update, delete: if isOwner("owner_uid");
+    }
+    match /report_notes/{id} {
       allow create: if isCreatingOwner("owner_uid");
       allow read, update, delete: if isOwner("owner_uid");
     }
