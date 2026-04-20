@@ -26,7 +26,7 @@ Backend (`api` service / local shell):
 - `AI_API_KEY` (required for real model responses; fallback mode works without it)
 - `AI_MODEL` (optional, default `gpt-4o-mini`)
 - `AI_BASE_URL` (optional, default `https://api.openai.com/v1`)
-- `CORS_ALLOW_ORIGINS` (optional): comma-separated browser origins for production, e.g. `https://your-app.vercel.app`
+- `CORS_ALLOW_ORIGINS` (optional): comma-separated **exact** browser origins (scheme + host + port, no path). Include **both** apex and `www` if you use both, e.g. `https://www.getplayiq.app,https://getplayiq.app`. **Required** for browser calls from your production site to the API; without it, `/api/*` preflight fails with “No `Access-Control-Allow-Origin` header”.
 - `CORS_ALLOW_ORIGIN_REGEX` (optional): extra allowed-origin regex OR’d with localhost (e.g. `https://.*\\.vercel\\.app` for all Vercel previews)
 
 Frontend:
@@ -105,16 +105,21 @@ Serve the FastAPI app behind your reverse proxy and point the frontend to the sa
    | `JWT_SECRET_KEY` | Long random string (generate locally with `openssl rand -hex 32`) |
    | `FIREBASE_PROJECT_ID` | Your Firebase project ID (Google sign-in) |
 
-6. **CORS for Vercel:** add either or both:
+6. **CORS (required for the live site):** on the API service, set **`CORS_ALLOW_ORIGINS`** to every origin your users open in the browser, comma-separated, for example:
 
-   - `CORS_ALLOW_ORIGINS` = `https://your-app.vercel.app` (your real Vercel URL, no path)  
-   - Optional: `CORS_ALLOW_ORIGIN_REGEX` = `https://.*\.vercel\.app` so preview deployments work too.
+   `https://www.getplayiq.app,https://getplayiq.app`
+
+   If this is wrong or empty, the **preflight** to `POST /api/auth/google` fails and the console shows **CORS** errors (not Firebase).
+
+   Optional: `CORS_ALLOW_ORIGIN_REGEX` = `https://.*\.vercel\.app` for Vercel preview URLs.
 
 7. **Public URL:** API service → **Settings** → **Networking** → **Generate domain**.  
    Use that origin as **`VITE_API_URL`** in Vercel (no trailing slash), then redeploy the frontend.
 
 8. **Verify:** open `https://<your-railway-domain>/health` — you should see `{"status":"ok","service":"playiq"}`.  
    If the app crashes on boot, check deploy logs: missing `DATABASE_URL` reference or wrong service linked to Postgres usually shows `connection refused` to `localhost`.
+
+9. **Firebase Google popup + “Cross-Origin-Opener-Policy” in the console:** the SPA includes `frontend/vercel.json` setting **`Cross-Origin-Opener-Policy: same-origin-allow-popups`**, which avoids broken popup flows with Google OAuth. If you host the frontend elsewhere, add the same header there. Alternatively, switch to **`signInWithRedirect`** in code (no popup).
 
 ### Phase 2 features (testing)
 
