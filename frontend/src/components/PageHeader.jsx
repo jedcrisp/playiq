@@ -17,6 +17,13 @@ export default function PageHeader() {
         formations, motion, and adjustment answers—driven by explicit rules, not generated
         diagrams.
       </p>
+      <p className="mt-4 max-w-2xl text-sm leading-relaxed text-zinc-500">
+        <span className="font-semibold text-zinc-700">Typical flow:</span> define the opponent in{" "}
+        <span className="font-medium text-zinc-700">Opponents</span>, add film rows in{" "}
+        <span className="font-medium text-zinc-700">Scouting data</span>, then use{" "}
+        <span className="font-medium text-zinc-700">Use for gameplan</span> so tendencies pre-fill
+        the fields here.
+      </p>
     </div>
   );
 }
