@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException
+from starlette.responses import Response
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
@@ -71,14 +72,14 @@ def delete_script(
     script_id: int,
     db: Session = Depends(get_db),
     current: User = Depends(get_current_user),
-) -> None:
+) -> Response:
     row = db.get(Script, script_id)
     if not row or row.owner_user_id != current.id:
         raise HTTPException(status_code=404, detail="Script not found")
     db.query(ScriptEntry).filter(ScriptEntry.script_id == script_id).delete()
     db.delete(row)
     db.commit()
-    return None
+    return Response(status_code=204)
 
 
 @router.get("/{script_id}/entries", response_model=list[ScriptEntryOut])
@@ -129,14 +130,14 @@ def delete_script_entry(
     entry_id: int,
     db: Session = Depends(get_db),
     current: User = Depends(get_current_user),
-) -> None:
+) -> Response:
     row = db.get(ScriptEntry, entry_id)
     if not row:
         raise HTTPException(status_code=404, detail="Script entry not found")
     get_visible_script(db, current.id, row.script_id)
     db.delete(row)
     db.commit()
-    return None
+    return Response(status_code=204)
 
 
 @router.post("/{script_id}/reorder", response_model=list[ScriptEntryOut])

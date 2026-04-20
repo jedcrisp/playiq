@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from starlette.responses import Response
 from sqlalchemy import and_, or_, select
 from sqlalchemy.orm import Session
 
@@ -150,7 +151,7 @@ def delete_scouting_play(
     play_id: int,
     db: Session = Depends(get_db),
     current: User = Depends(get_current_user),
-) -> None:
+) -> Response:
     row = db.get(ScoutingPlay, play_id)
     if not row:
         raise HTTPException(status_code=404, detail="Scouting play not found")
@@ -158,7 +159,7 @@ def delete_scouting_play(
         raise HTTPException(status_code=404, detail="Scouting play not found")
     db.delete(row)
     db.commit()
-    return None
+    return Response(status_code=204)
 
 
 @router.post("/import", response_model=CSVImportResponse)

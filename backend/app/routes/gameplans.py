@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from starlette.responses import Response
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
@@ -99,13 +100,13 @@ def delete_gameplan(
     gameplan_id: int,
     db: Session = Depends(get_db),
     current: User = Depends(get_current_user),
-) -> None:
+) -> Response:
     gp = db.get(Gameplan, gameplan_id)
     if not gp or gp.owner_user_id != current.id:
         raise HTTPException(status_code=404, detail="Gameplan not found")
     db.delete(gp)
     db.commit()
-    return None
+    return Response(status_code=204)
 
 
 def gp_to_out(gp: Gameplan) -> GameplanOut:

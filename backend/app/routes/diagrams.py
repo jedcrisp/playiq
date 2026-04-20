@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException
+from starlette.responses import Response
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
@@ -116,11 +117,11 @@ def delete_diagram(
     diagram_id: int,
     db: Session = Depends(get_db),
     current: User = Depends(get_current_user),
-) -> None:
+) -> Response:
     d = db.get(Diagram, diagram_id)
     if not d or d.owner_user_id != current.id:
         raise HTTPException(status_code=404, detail="Diagram not found")
     db.delete(d)
     db.commit()
-    return None
+    return Response(status_code=204)
 

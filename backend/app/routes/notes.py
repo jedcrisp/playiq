@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException
+from starlette.responses import Response, Query
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -69,11 +70,11 @@ def delete_note(
     note_id: int,
     db: Session = Depends(get_db),
     current: User = Depends(get_current_user),
-) -> None:
+) -> Response:
     row = db.get(Note, note_id)
     if not row or row.owner_user_id != current.id:
         raise HTTPException(status_code=404, detail="Note not found")
     db.delete(row)
     db.commit()
-    return None
+    return Response(status_code=204)
 

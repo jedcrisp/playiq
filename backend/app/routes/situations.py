@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException
+from starlette.responses import Response
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
@@ -70,14 +71,14 @@ def delete_situation_plan(
     plan_id: int,
     db: Session = Depends(get_db),
     current: User = Depends(get_current_user),
-) -> None:
+) -> Response:
     row = db.get(SituationPlan, plan_id)
     if not row or row.owner_user_id != current.id:
         raise HTTPException(status_code=404, detail="Situation plan not found")
     db.query(SituationPlanCall).filter(SituationPlanCall.situation_plan_id == plan_id).delete()
     db.delete(row)
     db.commit()
-    return None
+    return Response(status_code=204)
 
 
 @router.get("/{plan_id}/calls", response_model=list[SituationPlanCallOut])
@@ -128,11 +129,11 @@ def delete_situation_call(
     call_id: int,
     db: Session = Depends(get_db),
     current: User = Depends(get_current_user),
-) -> None:
+) -> Response:
     row = db.get(SituationPlanCall, call_id)
     if not row:
         raise HTTPException(status_code=404, detail="Situation plan call not found")
     get_visible_situation_plan(db, current.id, row.situation_plan_id)
     db.delete(row)
     db.commit()
-    return None
+    return Response(status_code=204)
