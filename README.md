@@ -116,8 +116,8 @@ Serve the FastAPI app behind your reverse proxy and point the frontend to the sa
 
    Optional: `CORS_ALLOW_ORIGIN_REGEX` = `https://.*\.vercel\.app` for Vercel preview URLs.
 
-7. **Public URL:** API service → **Settings** → **Networking** → **Generate domain**.  
-   Use that origin as **`VITE_API_URL`** in Vercel (no trailing slash), then redeploy the frontend.
+7. **Public URL:** API service → **Settings** → **Networking** → **Generate domain** (must look like `https://…up.railway.app`).  
+   Use that **full public https URL** as **`VITE_API_URL`** in Vercel (no trailing slash). Do **not** use `*.railway.internal` or any host without `https://` — the browser would treat it as a path on `getplayiq.app` and return 404. Redeploy the frontend after changing it.
 
 8. **Verify:** open `https://<your-railway-domain>/health` — you should see `{"status":"ok","service":"playiq"}`.  
    If the app crashes on boot, check deploy logs: missing `DATABASE_URL` reference or wrong service linked to Postgres usually shows `connection refused` to `localhost`.
