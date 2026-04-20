@@ -120,7 +120,16 @@ const mapDiagram = (d) => ({
 });
 
 export default function App() {
-  const { user, loading: authLoading, login, signup, loginWithGoogle, logout } = useAuth();
+  const {
+    user,
+    loading: authLoading,
+    login,
+    signup,
+    loginWithGoogle,
+    logout,
+    authError,
+    clearAuthError,
+  } = useAuth();
   const [authMode, setAuthMode] = useState("login");
   const [tab, setTab] = useState("plan");
   const [options, setOptions] = useState(null);
@@ -560,6 +569,8 @@ export default function App() {
             onLogin={login}
             onGoogleLogin={loginWithGoogle}
             onShowSignup={() => setAuthMode("signup")}
+            sessionAuthError={authError}
+            onClearSessionAuthError={clearAuthError}
           />
         ) : (
           <SignupPage onSignup={signup} onShowLogin={() => setAuthMode("login")} />

@@ -1,11 +1,21 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
-export default function LoginPage({ onLogin, onGoogleLogin, onShowSignup }) {
+export default function LoginPage({
+  onLogin,
+  onGoogleLogin,
+  onShowSignup,
+  sessionAuthError = "",
+  onClearSessionAuthError,
+}) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+
+  useEffect(() => {
+    if (sessionAuthError) setError(sessionAuthError);
+  }, [sessionAuthError]);
 
   return (
     <div className="mx-auto max-w-md rounded-3xl border border-zinc-200 bg-white p-8 shadow-card">
@@ -19,6 +29,7 @@ export default function LoginPage({ onLogin, onGoogleLogin, onShowSignup }) {
         onSubmit={async (e) => {
           e.preventDefault();
           setError("");
+          onClearSessionAuthError?.();
           setLoading(true);
           try {
             await onLogin({ email, password });
@@ -64,6 +75,7 @@ export default function LoginPage({ onLogin, onGoogleLogin, onShowSignup }) {
           disabled={googleLoading || loading}
           onClick={async () => {
             setError("");
+            onClearSessionAuthError?.();
             setGoogleLoading(true);
             try {
               await onGoogleLogin?.();

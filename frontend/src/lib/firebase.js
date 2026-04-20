@@ -50,14 +50,23 @@ export async function signInWithGoogleRedirect() {
   await signInWithRedirect(auth, provider);
 }
 
+/** Shared across React Strict Mode double-mounts: second getRedirectResult() is always null. */
+let redirectIdTokenPromise = null;
+
 /**
- * Call once on app load after returning from Google redirect. Returns ID token or null.
+ * Call on app load after returning from Google redirect. Returns ID token or null.
+ * Result is cached per page load so Strict Mode / duplicate effects do not consume the redirect twice.
  */
 export async function consumeGoogleRedirectIdToken() {
   if (!firebaseApp) return null;
-  const auth = getAuth(firebaseApp);
-  const result = await getRedirectResult(auth).catch(() => null);
-  if (!result?.user) return null;
-  return result.user.getIdToken();
+  if (!redirectIdTokenPromise) {
+    const auth = getAuth(firebaseApp);
+    redirectIdTokenPromise = (async () => {
+      const result = await getRedirectResult(auth).catch(() => null);
+      if (!result?.user) return null;
+      return result.user.getIdToken();
+    })();
+  }
+  return redirectIdTokenPromise;
 }
 
