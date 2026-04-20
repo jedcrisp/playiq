@@ -6,7 +6,7 @@ import os
 from fastapi import APIRouter, Depends, HTTPException, status
 from google.auth.transport import requests as google_requests
 from google.oauth2 import id_token as google_id_token
-from pydantic import ValidationError
+from pydantic import EmailStr, TypeAdapter, ValidationError
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
@@ -17,6 +17,8 @@ from ..models import User
 from ..schemas import GoogleSignInRequest, SignInRequest, SignUpRequest, TokenResponse, UserOut
 
 logger = logging.getLogger("playiq.auth")
+
+_email_adapter = TypeAdapter(EmailStr)
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -67,15 +69,22 @@ def signin_google(body: GoogleSignInRequest, db: Session = Depends(get_db)) -> T
     except Exception as exc:  # noqa: BLE001
         logger.warning("Firebase ID token verification failed: %s", exc)
         raise HTTPException(status_code=401, detail="Invalid Google sign-in token") from exc
-    email = (payload or {}).get("email")
-    if not email:
+    email_raw = (payload or {}).get("email")
+    if not email_raw:
         raise HTTPException(status_code=400, detail="Google token missing email")
+    try:
+        email = str(_email_adapter.validate_python(email_raw)).lower()
+    except ValidationError:
+        raise HTTPException(
+            status_code=400,
+            detail="Google token contains an invalid email address",
+        ) from None
     name = (payload or {}).get("name") or email.split("@")[0]
     try:
-        user = db.scalar(select(User).where(User.email == email.lower().strip()))
+        user = db.scalar(select(User).where(User.email == email))
         if not user:
             user = User(
-                email=email.lower().strip(),
+                email=email,
                 full_name=name.strip()[:120] or "Coach",
                 # user authenticates via Google for this path; no password login assumed
                 password_hash=hash_password(os.urandom(24).hex()),

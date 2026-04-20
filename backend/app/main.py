@@ -18,8 +18,10 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.exceptions import ResponseValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from recommendation_engine import INPUT_OPTIONS, recommend, validate_payload
 
@@ -105,6 +107,24 @@ if os.getenv("RAILWAY_ENVIRONMENT") and not (os.getenv("CORS_ALLOW_ORIGINS") or 
     logger.warning(
         "No browser origin configured for CORS. Set CORS_ALLOW_ORIGINS or FRONTEND_URL, e.g. "
         "https://www.getplayiq.app,https://getplayiq.app — or preflight requests from the SPA will fail."
+    )
+
+
+@app.exception_handler(ResponseValidationError)
+async def _response_validation_error_handler(request: Request, exc: ResponseValidationError) -> JSONResponse:
+    """Return value did not match response_model (often after route handler returns)."""
+    logger.error(
+        "Response validation failed %s %s: %s",
+        request.method,
+        request.url.path,
+        exc.errors(),
+    )
+    return JSONResponse(
+        status_code=500,
+        content={
+            "detail": "API response did not match the documented schema. See server logs (response validation).",
+            "errors": exc.errors(),
+        },
     )
 
 
