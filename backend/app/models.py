@@ -35,9 +35,10 @@ class User(Base):
 
 class Team(Base):
     __tablename__ = "teams"
+    __table_args__ = (UniqueConstraint("owner_user_id", "name", name="uq_team_owner_name"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    name: Mapped[str] = mapped_column(String(140), unique=True, index=True)
+    name: Mapped[str] = mapped_column(String(140), index=True)
     owner_user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(

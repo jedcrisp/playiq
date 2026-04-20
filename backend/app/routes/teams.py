@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from ..auth import get_current_user
@@ -42,14 +43,30 @@ def create_team(
     db: Session = Depends(get_db),
     current: User = Depends(get_current_user),
 ) -> TeamOut:
-    exists = db.scalar(select(Team).where(Team.name == body.name.strip()))
+    cleaned = body.name.strip()
+    exists = db.scalar(
+        select(Team).where(Team.owner_user_id == current.id, Team.name == cleaned)
+    )
     if exists:
-        raise HTTPException(status_code=400, detail="Team name already exists")
-    team = Team(name=body.name.strip(), owner_user_id=current.id)
+        raise HTTPException(
+            status_code=400,
+            detail="You already have a team with this name. Pick a different name.",
+        )
+    team = Team(name=cleaned, owner_user_id=current.id)
     db.add(team)
     db.flush()
     db.add(TeamMembership(user_id=current.id, team_id=team.id, role=TeamRole.admin))
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "Could not create team (database constraint). If this persists after retrying, "
+                "run the SQL migration in backend/scripts/migrate_teams_name_per_owner.sql on Postgres."
+            ),
+        ) from None
     db.refresh(team)
     return team  # type: ignore[return-value]
 
