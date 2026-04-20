@@ -1,0 +1,32 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: presnap
+      POSTGRES_USER: presnap
+      POSTGRES_PASSWORD: presnap
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U presnap -d presnap"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+psycopg://presnap:presnap@db:5432/presnap
+      JWT_SECRET_KEY: dev-only-change-me
+      FIREBASE_PROJECT_ID: playiq-2c8bd
+    restart: unless-stopped
+
+volumes:
+  pgdata:

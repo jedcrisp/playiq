@@ -1,0 +1,58 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    @apply scroll-smooth;
+  }
+  body {
+    @apply min-h-screen bg-zinc-50 text-zinc-900 antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11", "ss01";
+  }
+  ::selection {
+    @apply bg-brand-200/90 text-zinc-900;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+/* Print: show only the call sheet or install sheet region */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #print-call-sheet,
+  #print-call-sheet *,
+  #print-install-sheet,
+  #print-install-sheet *,
+  #print-analytics-report,
+  #print-analytics-report *,
+  #print-opponent-report,
+  #print-opponent-report *,
+  #print-self-scout-report,
+  #print-self-scout-report *,
+  #print-game-day-sheet,
+  #print-game-day-sheet * {
+    visibility: visible;
+  }
+  #print-call-sheet,
+  #print-install-sheet,
+  #print-analytics-report,
+  #print-opponent-report,
+  #print-self-scout-report,
+  #print-game-day-sheet {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+  #print-install-sheet {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+}
