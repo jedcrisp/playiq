@@ -4,6 +4,7 @@ import {
   GoogleAuthProvider,
   getAuth,
   getRedirectResult,
+  onAuthStateChanged,
   signInWithRedirect,
 } from "firebase/auth";
 
@@ -87,15 +88,31 @@ function oauthRecoveryHintForCurrentHost() {
 }
 
 /**
- * After redirect, Firebase sometimes attaches currentUser a tick after getRedirectResult() is still null.
+ * After redirect, Firebase can attach currentUser asynchronously.
+ * Use auth state subscription (with timeout) instead of a short polling loop.
  */
-async function waitForRedirectUser(auth, maxMs = 900) {
-  const deadline = Date.now() + maxMs;
-  while (Date.now() < deadline) {
-    if (auth.currentUser) return auth.currentUser;
-    await new Promise((r) => setTimeout(r, 60));
-  }
-  return auth.currentUser;
+async function waitForRedirectUser(auth, maxMs = 8000) {
+  if (auth.currentUser) return auth.currentUser;
+  return new Promise((resolve) => {
+    let done = false;
+    const finish = (user) => {
+      if (done) return;
+      done = true;
+      try {
+        unsubscribe();
+      } catch {
+        /* ignore */
+      }
+      clearTimeout(timer);
+      resolve(user || auth.currentUser || null);
+    };
+    const unsubscribe = onAuthStateChanged(
+      auth,
+      (user) => finish(user),
+      () => finish(null),
+    );
+    const timer = setTimeout(() => finish(null), maxMs);
+  });
 }
 
 export async function signInWithGoogleRedirect() {
