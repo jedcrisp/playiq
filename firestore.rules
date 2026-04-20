@@ -1,0 +1,50 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uidField) {
+      return signedIn() && resource.data[uidField] == request.auth.uid;
+    }
+
+    function isCreatingOwner(uidField) {
+      return signedIn() && request.resource.data[uidField] == request.auth.uid;
+    }
+
+    // User private profile document: /users/{uid}
+    match /users/{uid} {
+      allow create, read, update, delete: if signedIn() && request.auth.uid == uid;
+    }
+
+    // Gameplans: owner-only writes/reads (team sharing can be relaxed later).
+    match /gameplans/{id} {
+      allow create: if isCreatingOwner("owner_uid");
+      allow read, update, delete: if isOwner("owner_uid");
+    }
+
+    // Placeholder patterns for future migrations.
+    match /opponents/{id} {
+      allow create: if isCreatingOwner("owner_uid");
+      allow read, update, delete: if isOwner("owner_uid");
+    }
+    match /diagrams/{id} {
+      allow create: if isCreatingOwner("owner_uid");
+      allow read, update, delete: if isOwner("owner_uid");
+    }
+    match /scouting_plays/{id} {
+      allow create: if isCreatingOwner("owner_uid");
+      allow read, update, delete: if isOwner("owner_uid");
+    }
+    match /scripts/{id} {
+      allow create: if isCreatingOwner("owner_uid");
+      allow read, update, delete: if isOwner("owner_uid");
+    }
+    match /situation_plans/{id} {
+      allow create: if isCreatingOwner("owner_uid");
+      allow read, update, delete: if isOwner("owner_uid");
+    }
+  }
+}
+

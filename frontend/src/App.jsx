@@ -24,7 +24,6 @@ import SituationalPlanningPage from "./pages/SituationalPlanningPage.jsx";
 import GameDayViewPage from "./pages/GameDayViewPage.jsx";
 import {
   createDiagram,
-  createGameplan,
   createOpponent,
   createReportNote,
   createScript,
@@ -39,7 +38,6 @@ import {
   deleteSituationCall,
   deleteSituationPlan,
   deleteDiagramById,
-  deleteGameplan,
   deleteOpponentById,
   fetchOptions,
   fetchRecommend,
@@ -52,7 +50,6 @@ import {
   importScoutingCSV,
   joinTeam,
   listDiagrams,
-  listGameplans,
   listMemberships,
   listOpponents,
   listScoutingPlays,
@@ -68,9 +65,14 @@ import {
   updateScoutingPlay,
   updateSituationCall,
   updateDiagramById,
-  updateGameplan,
   updateOpponent,
 } from "./lib/api.js";
+import {
+  createGameplan,
+  deleteGameplan,
+  listGameplans,
+  updateGameplan,
+} from "./lib/firestoreGameplans.js";
 import { selectDiagramsForInstall } from "./lib/diagramStorage.js";
 import { tendenciesToFormValues } from "./lib/opponentStorage.js";
 

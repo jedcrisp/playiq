@@ -34,6 +34,8 @@ Frontend:
 
 - `VITE_API_URL` (optional; leave unset in local dev to use Vite proxy)
 - `VITE_FIREBASE_*` keys in `frontend/.env.local` for Google popup sign-in
+- Firestore uses the same `VITE_FIREBASE_*` config; gameplans now read/write from
+  Firestore as the signed-in Firebase user.
 
 ## Run locally
 
@@ -122,7 +124,13 @@ Serve the FastAPI app behind your reverse proxy and point the frontend to the sa
 8. **Verify:** open `https://<your-railway-domain>/health` — you should see `{"status":"ok","service":"playiq"}`.  
    If the app crashes on boot, check deploy logs: missing `DATABASE_URL` reference or wrong service linked to Postgres usually shows `connection refused` to `localhost`.
 
-9. **Firebase Google sign-in:** the app uses **`signInWithRedirect`** (full-page redirect, no popup), which avoids **Cross-Origin-Opener-Policy** / `window.closed` issues. In [Firebase Console](https://console.firebase.google.com/) → Authentication → Settings → **Authorized domains**, add your production hosts (e.g. `getplayiq.app`, `www.getplayiq.app`, and your Vercel domain).
+9. **Firebase Google sign-in:** the app attempts **popup** first and falls back to
+   **redirect** when popup is blocked/unavailable. In [Firebase Console](https://console.firebase.google.com/) → Authentication → Settings → **Authorized domains**, add your production hosts (e.g. `getplayiq.app`, `www.getplayiq.app`, and your Vercel domain).
+
+10. **Firestore rules/indexes (required for gameplans):**
+   - Deploy `firestore.rules`
+   - Deploy `firestore.indexes.json`
+   - Rules are owner-based (`owner_uid == request.auth.uid`) and require Firebase auth.
 
 ### Phase 2 features (testing)
 
@@ -154,7 +162,7 @@ Diagrams and install sheets are stored in **`localStorage`** (`playiq_diagrams_v
 1. **Authentication flow:** Launch app, create account on **Sign up**, then sign in/out from top-right user menu.
 2. **Protected app:** Planner/dashboard is only accessible after auth; refresh keeps session via bearer token in browser storage.
 3. **Team onboarding:** After signup, create a team or join an existing team from Team setup; you can continue solo.
-4. **Database-backed records:** Gameplans, opponents, diagrams, and notes are now loaded/saved via API + PostgreSQL.
+4. **Database-backed records:** gameplans are stored in Firestore (owner-scoped rules). Other records remain API + PostgreSQL unless migrated.
 5. **Gameplan sharing:** In **Save gameplan**, choose visibility:
    - `Private` (only owner)
    - `Team` (visible to team members)
