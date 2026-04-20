@@ -83,6 +83,15 @@ npm run preview
 
 Serve the FastAPI app behind your reverse proxy and point the frontend to the same origin or configure `VITE_API_URL` for cross-origin API calls.
 
+### Deploy API on Railway (overview)
+
+1. **New project** → **Deploy from GitHub** → select this repo.
+2. Add a **PostgreSQL** plugin; Railway injects **`DATABASE_URL`** into linked services (the app normalizes `postgres://` / `postgresql://` for **psycopg3**).
+3. Deploy the API with the repo-root **Dockerfile** (Docker build from repository root so `main.py` and `backend/` are included).
+4. In the **API service → Variables**, set at least **`JWT_SECRET_KEY`** (random string) and **`FIREBASE_PROJECT_ID`** (Google SSO).
+5. Copy the API **public URL** and set **`VITE_API_URL`** on Vercel to that origin (no trailing slash).
+6. If the browser blocks API calls, add your Vercel domain to **CORS** in `backend/app/main.py`.
+
 ### Phase 2 features (testing)
 
 With backend + `npm run dev` running:
