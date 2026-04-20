@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException
-from starlette.responses import Response, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
+from starlette.responses import Response
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
