@@ -6,6 +6,7 @@ Or from backend/: uvicorn app.main:app --reload --port 8000
 
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
@@ -36,6 +37,36 @@ from .routes import (
 )
 from .schemas import ConceptResponse, RecommendRequest, RecommendResponse
 
+_DEFAULT_LOCAL_ORIGINS = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:4173",
+    "http://127.0.0.1:4173",
+]
+
+
+def _cors_origins() -> list[str]:
+    """Merge local dev origins with CORS_ALLOW_ORIGINS (comma-separated, e.g. Vercel production URL)."""
+    extra = os.getenv("CORS_ALLOW_ORIGINS", "")
+    out = list(_DEFAULT_LOCAL_ORIGINS)
+    for part in extra.split(","):
+        origin = part.strip()
+        if origin and origin not in out:
+            out.append(origin)
+    return out
+
+
+def _cors_origin_regex() -> str | None:
+    """Localhost any-port, plus optional extra pattern (e.g. https://.*\\.vercel\\.app)."""
+    base = r"http://(localhost|127\.0\.0\.1):\d+"
+    extra = (os.getenv("CORS_ALLOW_ORIGIN_REGEX") or "").strip()
+    if extra:
+        return f"({base})|({extra})"
+    return base
+
+
 app = FastAPI(
     title="PlayIQ API",
     description="Rule-based offensive planning for football coaches",
@@ -45,15 +76,8 @@ Base.metadata.create_all(bind=engine)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "http://localhost:4173",
-        "http://127.0.0.1:4173",
-    ],
-    allow_origin_regex=r"http://(localhost|127\.0\.0\.1):\d+",
+    allow_origins=_cors_origins(),
+    allow_origin_regex=_cors_origin_regex(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

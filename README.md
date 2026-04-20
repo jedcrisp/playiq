@@ -26,6 +26,8 @@ Backend (`api` service / local shell):
 - `AI_API_KEY` (required for real model responses; fallback mode works without it)
 - `AI_MODEL` (optional, default `gpt-4o-mini`)
 - `AI_BASE_URL` (optional, default `https://api.openai.com/v1`)
+- `CORS_ALLOW_ORIGINS` (optional): comma-separated browser origins for production, e.g. `https://your-app.vercel.app`
+- `CORS_ALLOW_ORIGIN_REGEX` (optional): extra allowed-origin regex OR’d with localhost (e.g. `https://.*\\.vercel\\.app` for all Vercel previews)
 
 Frontend:
 
@@ -83,14 +85,36 @@ npm run preview
 
 Serve the FastAPI app behind your reverse proxy and point the frontend to the same origin or configure `VITE_API_URL` for cross-origin API calls.
 
-### Deploy API on Railway (overview)
+### Deploy API on Railway (Postgres + Docker)
 
-1. **New project** → **Deploy from GitHub** → select this repo.
-2. Add a **PostgreSQL** plugin; Railway injects **`DATABASE_URL`** into linked services (the app normalizes `postgres://` / `postgresql://` for **psycopg3**).
-3. Deploy the API with the repo-root **Dockerfile** (Docker build from repository root so `main.py` and `backend/` are included).
-4. In the **API service → Variables**, set at least **`JWT_SECRET_KEY`** (random string) and **`FIREBASE_PROJECT_ID`** (Google SSO).
-5. Copy the API **public URL** and set **`VITE_API_URL`** on Vercel to that origin (no trailing slash).
-6. If the browser blocks API calls, add your Vercel domain to **CORS** in `backend/app/main.py`.
+1. **Create a project** in [Railway](https://railway.app/) → **Deploy from GitHub** → choose this repository.
+
+2. **Add PostgreSQL:** **New** → **Database** → **PostgreSQL**. Wait until it is running.
+
+3. **Add the API service:** **New** → **GitHub Repo** → same repo (or **Empty service** → connect repo).  
+   - **Settings → Build:** builder **Dockerfile**, root directory **/** (repository root, where `Dockerfile` lives).  
+   - The image listens on **`PORT`** (Railway sets this automatically; the Dockerfile uses `${PORT:-8000}`).
+
+4. **Wire `DATABASE_URL` to the API:** open the **API service** → **Variables** → **Add variable** → **Reference** → select the Postgres plugin’s **`DATABASE_URL`**.  
+   Railway’s value looks like `postgresql://...`; the app rewrites it to **`postgresql+psycopg://`** for SQLAlchemy.
+
+5. **Set required variables** on the API service (plain text, not references):
+
+   | Variable | Example |
+   |----------|---------|
+   | `JWT_SECRET_KEY` | Long random string (generate locally with `openssl rand -hex 32`) |
+   | `FIREBASE_PROJECT_ID` | Your Firebase project ID (Google sign-in) |
+
+6. **CORS for Vercel:** add either or both:
+
+   - `CORS_ALLOW_ORIGINS` = `https://your-app.vercel.app` (your real Vercel URL, no path)  
+   - Optional: `CORS_ALLOW_ORIGIN_REGEX` = `https://.*\.vercel\.app` so preview deployments work too.
+
+7. **Public URL:** API service → **Settings** → **Networking** → **Generate domain**.  
+   Use that origin as **`VITE_API_URL`** in Vercel (no trailing slash), then redeploy the frontend.
+
+8. **Verify:** open `https://<your-railway-domain>/health` — you should see `{"status":"ok","service":"playiq"}`.  
+   If the app crashes on boot, check deploy logs: missing `DATABASE_URL` reference or wrong service linked to Postgres usually shows `connection refused` to `localhost`.
 
 ### Phase 2 features (testing)
 
