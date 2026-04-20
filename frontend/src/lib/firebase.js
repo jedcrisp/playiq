@@ -40,10 +40,56 @@ export async function initializeFirebaseAnalytics() {
 /**
  * Full-page redirect (no popup). Avoids Cross-Origin-Opener-Policy / window.closed issues on production domains.
  */
+/** Set right before leaving for Google; used to detect return + recover ID token if needed. */
+const OAUTH_PENDING_KEY = "playiq_google_oauth_pending_ts";
+const OAUTH_PENDING_MAX_MS = 20 * 60 * 1000;
+
+function oauthPendingRecent() {
+  if (typeof sessionStorage === "undefined") return false;
+  try {
+    const raw = sessionStorage.getItem(OAUTH_PENDING_KEY);
+    if (!raw) return false;
+    const ts = Number(raw);
+    if (!Number.isFinite(ts)) return false;
+    return Date.now() - ts < OAUTH_PENDING_MAX_MS;
+  } catch {
+    return false;
+  }
+}
+
+function markOauthPending() {
+  try {
+    sessionStorage.setItem(OAUTH_PENDING_KEY, String(Date.now()));
+  } catch {
+    /* private mode / blocked */
+  }
+}
+
+function clearOauthPending() {
+  try {
+    sessionStorage.removeItem(OAUTH_PENDING_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+/**
+ * After redirect, Firebase sometimes attaches currentUser a tick after getRedirectResult() is still null.
+ */
+async function waitForRedirectUser(auth, maxMs = 900) {
+  const deadline = Date.now() + maxMs;
+  while (Date.now() < deadline) {
+    if (auth.currentUser) return auth.currentUser;
+    await new Promise((r) => setTimeout(r, 60));
+  }
+  return auth.currentUser;
+}
+
 export async function signInWithGoogleRedirect() {
   if (!firebaseApp) {
     throw new Error("Firebase config is missing. Set VITE_FIREBASE_* env values.");
   }
+  markOauthPending();
   const auth = getAuth(firebaseApp);
   const provider = new GoogleAuthProvider();
   provider.setCustomParameters({ prompt: "select_account" });
@@ -52,6 +98,15 @@ export async function signInWithGoogleRedirect() {
 
 /** Shared across React Strict Mode double-mounts: second getRedirectResult() is always null. */
 let redirectIdTokenPromise = null;
+
+/** One-shot hint when we expected OAuth return but got no token (e.g. www vs apex). */
+let lastOAuthRecoveryMessage = null;
+
+export function takeGoogleOAuthRecoveryMessage() {
+  const msg = lastOAuthRecoveryMessage;
+  lastOAuthRecoveryMessage = null;
+  return msg;
+}
 
 /**
  * Call on app load after returning from Google redirect. Returns ID token or null.
@@ -62,9 +117,27 @@ export async function consumeGoogleRedirectIdToken() {
   if (!redirectIdTokenPromise) {
     const auth = getAuth(firebaseApp);
     redirectIdTokenPromise = (async () => {
+      const pending = oauthPendingRecent();
       const result = await getRedirectResult(auth).catch(() => null);
-      if (!result?.user) return null;
-      return result.user.getIdToken();
+      let user = result?.user ?? null;
+
+      if (!user && pending) {
+        user = await waitForRedirectUser(auth);
+      }
+
+      if (user) {
+        clearOauthPending();
+        return user.getIdToken();
+      }
+
+      if (pending) {
+        clearOauthPending();
+        lastOAuthRecoveryMessage =
+          "Google sign-in did not finish in this tab. Use the same site address as when you started " +
+          "(for example always https://www.getplayiq.app or always https://getplayiq.app), then try again.";
+      }
+
+      return null;
     })();
   }
   return redirectIdTokenPromise;

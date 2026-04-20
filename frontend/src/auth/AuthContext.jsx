@@ -1,6 +1,10 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { fetchMe, getStoredToken, setStoredToken, signIn, signInWithGoogleIdToken, signUp } from "../lib/api.js";
-import { consumeGoogleRedirectIdToken, signInWithGoogleRedirect } from "../lib/firebase.js";
+import {
+  consumeGoogleRedirectIdToken,
+  signInWithGoogleRedirect,
+  takeGoogleOAuthRecoveryMessage,
+} from "../lib/firebase.js";
 
 const AuthContext = createContext(null);
 
@@ -18,6 +22,10 @@ export function AuthProvider({ children }) {
       try {
         const redirectToken = await consumeGoogleRedirectIdToken();
         if (cancelled) return;
+        if (!redirectToken) {
+          const recovery = takeGoogleOAuthRecoveryMessage();
+          if (recovery) setAuthError(recovery);
+        }
         if (redirectToken) {
           if (!googleIdTokenExchangePromise) {
             googleIdTokenExchangePromise = signInWithGoogleIdToken(redirectToken);
