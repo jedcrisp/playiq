@@ -5,6 +5,7 @@ import {
   getAuth,
   getRedirectResult,
   onAuthStateChanged,
+  signInWithPopup,
   signInWithRedirect,
 } from "firebase/auth";
 
@@ -124,6 +125,36 @@ export async function signInWithGoogleRedirect() {
   const provider = new GoogleAuthProvider();
   provider.setCustomParameters({ prompt: "select_account" });
   await signInWithRedirect(auth, provider);
+}
+
+/**
+ * Try popup first for reliability; return null when popup path cannot proceed
+ * so caller can fall back to redirect flow.
+ */
+export async function signInWithGooglePopupIdToken() {
+  if (!firebaseApp) {
+    throw new Error("Firebase config is missing. Set VITE_FIREBASE_* env values.");
+  }
+  const auth = getAuth(firebaseApp);
+  const provider = new GoogleAuthProvider();
+  provider.setCustomParameters({ prompt: "select_account" });
+  try {
+    const result = await signInWithPopup(auth, provider);
+    if (!result?.user) return null;
+    clearOauthPending();
+    return result.user.getIdToken();
+  } catch (err) {
+    const code = String(err?.code || "");
+    if (
+      code === "auth/popup-blocked" ||
+      code === "auth/popup-closed-by-user" ||
+      code === "auth/cancelled-popup-request" ||
+      code === "auth/operation-not-supported-in-this-environment"
+    ) {
+      return null;
+    }
+    throw err;
+  }
 }
 
 /** Shared across React Strict Mode double-mounts: second getRedirectResult() is always null. */

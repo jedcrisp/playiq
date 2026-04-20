@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { fetchMe, getStoredToken, setStoredToken, signIn, signInWithGoogleIdToken, signUp } from "../lib/api.js";
 import {
   consumeGoogleRedirectIdToken,
+  signInWithGooglePopupIdToken,
   signInWithGoogleRedirect,
   takeGoogleOAuthRecoveryMessage,
 } from "../lib/firebase.js";
@@ -91,7 +92,15 @@ export function AuthProvider({ children }) {
       },
       async loginWithGoogle() {
         setAuthError("");
+        const popupIdToken = await signInWithGooglePopupIdToken();
+        if (popupIdToken) {
+          const data = await signInWithGoogleIdToken(popupIdToken);
+          setStoredToken(data.access_token);
+          setUser(data.user);
+          return data.user;
+        }
         await signInWithGoogleRedirect();
+        return null;
       },
       logout() {
         setStoredToken("");
