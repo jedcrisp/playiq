@@ -151,7 +151,8 @@ export async function consumeGoogleRedirectIdToken() {
       const result = await getRedirectResult(auth).catch(() => null);
       let user = result?.user ?? null;
 
-      if (!user && pending) {
+      // Some browsers lose sessionStorage across auth bounce; still attempt auth-state recovery.
+      if (!user) {
         user = await waitForRedirectUser(auth);
       }
 
