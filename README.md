@@ -34,7 +34,8 @@ Frontend:
 
 - `VITE_API_URL` (optional; leave unset in local dev to use Vite proxy)
 - `VITE_FIREBASE_*` keys in `frontend/.env.local` for Google popup sign-in
-- Firestore uses the same `VITE_FIREBASE_*` config; gameplans and opponents now
+- Firestore uses the same `VITE_FIREBASE_*` config; gameplans, opponents, and
+  diagrams now
   read/write from Firestore as the signed-in Firebase user.
 
 ## Run locally
@@ -162,7 +163,7 @@ Diagrams and install sheets are stored in **`localStorage`** (`playiq_diagrams_v
 1. **Authentication flow:** Launch app, create account on **Sign up**, then sign in/out from top-right user menu.
 2. **Protected app:** Planner/dashboard is only accessible after auth; refresh keeps session via bearer token in browser storage.
 3. **Team onboarding:** After signup, create a team or join an existing team from Team setup; you can continue solo.
-4. **Database-backed records:** gameplans and opponents are stored in Firestore
+4. **Database-backed records:** gameplans, opponents, and diagrams are stored in Firestore
    (owner-scoped rules). Other records remain API + PostgreSQL unless migrated.
 5. **Gameplan sharing:** In **Save gameplan**, choose visibility:
    - `Private` (only owner)
