@@ -1,6 +1,11 @@
 import { initializeApp } from "firebase/app";
 import { getAnalytics, isSupported } from "firebase/analytics";
-import { GoogleAuthProvider, getAuth, signInWithPopup } from "firebase/auth";
+import {
+  GoogleAuthProvider,
+  getAuth,
+  getRedirectResult,
+  signInWithRedirect,
+} from "firebase/auth";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -32,14 +37,27 @@ export async function initializeFirebaseAnalytics() {
   return getAnalytics(firebaseApp);
 }
 
-export async function signInWithGooglePopup() {
+/**
+ * Full-page redirect (no popup). Avoids Cross-Origin-Opener-Policy / window.closed issues on production domains.
+ */
+export async function signInWithGoogleRedirect() {
   if (!firebaseApp) {
     throw new Error("Firebase config is missing. Set VITE_FIREBASE_* env values.");
   }
   const auth = getAuth(firebaseApp);
   const provider = new GoogleAuthProvider();
   provider.setCustomParameters({ prompt: "select_account" });
-  const cred = await signInWithPopup(auth, provider);
-  return cred.user.getIdToken();
+  await signInWithRedirect(auth, provider);
+}
+
+/**
+ * Call once on app load after returning from Google redirect. Returns ID token or null.
+ */
+export async function consumeGoogleRedirectIdToken() {
+  if (!firebaseApp) return null;
+  const auth = getAuth(firebaseApp);
+  const result = await getRedirectResult(auth).catch(() => null);
+  if (!result?.user) return null;
+  return result.user.getIdToken();
 }
 

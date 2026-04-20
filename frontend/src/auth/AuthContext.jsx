@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { fetchMe, getStoredToken, setStoredToken, signIn, signInWithGoogleIdToken, signUp } from "../lib/api.js";
-import { signInWithGooglePopup } from "../lib/firebase.js";
+import { consumeGoogleRedirectIdToken, signInWithGoogleRedirect } from "../lib/firebase.js";
 
 const AuthContext = createContext(null);
 
@@ -9,18 +9,43 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = getStoredToken();
-    if (!token) {
-      setLoading(false);
-      return;
-    }
-    fetchMe()
-      .then((me) => setUser(me))
-      .catch(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const redirectToken = await consumeGoogleRedirectIdToken();
+        if (cancelled) return;
+        if (redirectToken) {
+          const data = await signInWithGoogleIdToken(redirectToken);
+          if (cancelled) return;
+          setStoredToken(data.access_token);
+          setUser(data.user);
+          setLoading(false);
+          return;
+        }
+      } catch {
         setStoredToken("");
         setUser(null);
-      })
-      .finally(() => setLoading(false));
+      }
+      const token = getStoredToken();
+      if (!token) {
+        setLoading(false);
+        return;
+      }
+      fetchMe()
+        .then((me) => {
+          if (!cancelled) setUser(me);
+        })
+        .catch(() => {
+          setStoredToken("");
+          setUser(null);
+        })
+        .finally(() => {
+          if (!cancelled) setLoading(false);
+        });
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const value = useMemo(
@@ -40,11 +65,7 @@ export function AuthProvider({ children }) {
         return data.user;
       },
       async loginWithGoogle() {
-        const idToken = await signInWithGooglePopup();
-        const data = await signInWithGoogleIdToken(idToken);
-        setStoredToken(data.access_token);
-        setUser(data.user);
-        return data.user;
+        await signInWithGoogleRedirect();
       },
       logout() {
         setStoredToken("");

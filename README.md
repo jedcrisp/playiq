@@ -119,7 +119,7 @@ Serve the FastAPI app behind your reverse proxy and point the frontend to the sa
 8. **Verify:** open `https://<your-railway-domain>/health` — you should see `{"status":"ok","service":"playiq"}`.  
    If the app crashes on boot, check deploy logs: missing `DATABASE_URL` reference or wrong service linked to Postgres usually shows `connection refused` to `localhost`.
 
-9. **Firebase Google popup + “Cross-Origin-Opener-Policy” in the console:** the SPA includes `frontend/vercel.json` setting **`Cross-Origin-Opener-Policy: same-origin-allow-popups`**, which avoids broken popup flows with Google OAuth. If you host the frontend elsewhere, add the same header there. Alternatively, switch to **`signInWithRedirect`** in code (no popup).
+9. **Firebase Google sign-in:** the app uses **`signInWithRedirect`** (full-page redirect, no popup), which avoids **Cross-Origin-Opener-Policy** / `window.closed` issues. In [Firebase Console](https://console.firebase.google.com/) → Authentication → Settings → **Authorized domains**, add your production hosts (e.g. `getplayiq.app`, `www.getplayiq.app`, and your Vercel domain).
 
 ### Phase 2 features (testing)
 

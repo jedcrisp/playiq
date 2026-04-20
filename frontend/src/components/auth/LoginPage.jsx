@@ -75,7 +75,7 @@ export default function LoginPage({ onLogin, onGoogleLogin, onShowSignup }) {
           }}
           className="w-full rounded-xl border border-zinc-300 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-800 hover:bg-zinc-50 disabled:opacity-50"
         >
-          {googleLoading ? "Connecting Google..." : "Continue with Google"}
+          {googleLoading ? "Redirecting to Google..." : "Continue with Google"}
         </button>
       </div>
       <button

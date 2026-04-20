@@ -6,9 +6,12 @@ Or from backend/: uvicorn app.main:app --reload --port 8000
 
 from __future__ import annotations
 
+import logging
 import os
 import sys
 from pathlib import Path
+
+logger = logging.getLogger("playiq")
 
 # Repo root (parent of backend/)
 ROOT = Path(__file__).resolve().parents[2]
@@ -82,6 +85,12 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+if os.getenv("RAILWAY_ENVIRONMENT") and not (os.getenv("CORS_ALLOW_ORIGINS") or "").strip():
+    logger.warning(
+        "CORS_ALLOW_ORIGINS is empty. Set it to your site origin(s), e.g. "
+        "https://www.getplayiq.app,https://getplayiq.app — or browser requests will fail CORS preflight."
+    )
 
 
 @app.get("/health")
