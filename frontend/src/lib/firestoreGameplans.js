@@ -48,6 +48,7 @@ function mapDoc(snapshot) {
     inputs: data.inputs || {},
     recommendation: data.recommendation || {},
     notes: data.notes || {},
+    ai_summary: data.ai_summary ?? null,
     created_at: asIso(data.created_at),
     updated_at: asIso(data.updated_at),
   };
@@ -103,6 +104,7 @@ export async function updateGameplan(id, patch) {
   if ("inputs" in patch) update.inputs = patch.inputs;
   if ("recommendation" in patch) update.recommendation = patch.recommendation;
   if ("notes" in patch) update.notes = patch.notes;
+  if ("ai_summary" in patch) update.ai_summary = patch.ai_summary;
   await updateDoc(ref, update);
   return { ok: true };
 }

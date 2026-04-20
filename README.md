@@ -5,8 +5,9 @@ MVP web app for football coaches: capture a defensive look, pick a matchup to at
 ## Stack
 
 - **Frontend:** React, Vite, Tailwind CSS (`frontend/`)
-- **Backend:** FastAPI (`backend/`)
-- **Engine:** Python package `recommendation_engine/` (rule packs + matcher)
+- **Firebase:** Auth, Firestore, and **Cloud Functions** (`functions/`) for recommendations + AI
+- **Backend (optional):** FastAPI (`backend/`) for local Docker workflows or legacy tooling
+- **Engine:** Python package `recommendation_engine/` (rule packs + matcher; bundled into `functions/` for deploy)
 
 ## Prerequisites
 
@@ -32,11 +33,14 @@ Backend (`api` service / local shell):
 
 Frontend:
 
-- `VITE_API_URL` (optional; leave unset in local dev to use Vite proxy)
-- `VITE_FIREBASE_*` keys in `frontend/.env.local` for Google popup sign-in
-- Firestore uses the same `VITE_FIREBASE_*` config; gameplans, opponents,
-  diagrams, scouting plays, scripts, situations, and report notes now read/write
-  from Firestore as the signed-in Firebase user.
+- `VITE_FIREBASE_*` keys in `frontend/.env.local` (Auth + Firestore + callable Functions)
+- Optional `VITE_FIREBASE_FUNCTIONS_REGION` (default `us-central1`) if your functions are not in `us-central1`
+- Firestore holds gameplans, opponents, diagrams, scouting, scripts, situations, report notes, **teams**, and team memberships. The SPA does **not** require a separate API host (no `VITE_API_URL`) for core usage.
+
+Firebase Cloud Functions (`functions/`):
+
+- Deploy: `firebase deploy --only functions` (Python 3.11). Set **`AI_API_KEY`** (and optionally `AI_MODEL`, `AI_BASE_URL`) on the function in Google Cloud Console so AI features use OpenAI; without it, callables return the same fallback text as the old FastAPI mode.
+- The folder `functions/recommendation_engine` is a copy of the root package used at deploy time; after changing rules in `recommendation_engine/`, copy it into `functions/` again before deploying.
 
 ## Run locally
 
@@ -163,10 +167,11 @@ Diagrams and install sheets are stored in **`localStorage`** (`playiq_diagrams_v
 1. **Authentication flow:** Launch app, create account on **Sign up**, then sign in/out from top-right user menu.
 2. **Protected app:** Planner/dashboard is only accessible after auth; refresh keeps session via bearer token in browser storage.
 3. **Team onboarding:** After signup, create a team or join an existing team from Team setup; you can continue solo.
-4. **Database-backed records:** gameplans, opponents, diagrams, scouting,
-   scripts, situations, report notes, and analytics views are now Firestore-driven
-   (owner-scoped rules).
-   Auth, recommendation generation, and AI endpoints remain API-backed.
+4. **Cloud-backed records:** gameplans, opponents, diagrams, scouting, scripts,
+   situations, report notes, teams, memberships, and analytics views are
+   Firestore-driven (owner / membership rules). Auth is Firebase-only. Rule-based
+   **recommend** and **AI** callables run on Firebase Cloud Functions (no Railway
+   required for the live app).
 5. **Gameplan sharing:** In **Save gameplan**, choose visibility:
    - `Private` (only owner)
    - `Team` (visible to team members)

@@ -2,11 +2,15 @@ import { initializeApp } from "firebase/app";
 import { getAnalytics, isSupported } from "firebase/analytics";
 import {
   GoogleAuthProvider,
+  createUserWithEmailAndPassword,
   getAuth,
   getRedirectResult,
   onAuthStateChanged,
+  signInWithEmailAndPassword,
   signInWithPopup,
   signInWithRedirect,
+  signOut,
+  updateProfile,
 } from "firebase/auth";
 
 const firebaseConfig = {
@@ -128,10 +132,9 @@ export async function signInWithGoogleRedirect() {
 }
 
 /**
- * Try popup first for reliability; return null when popup path cannot proceed
- * so caller can fall back to redirect flow.
+ * Try Google popup first; return true when signed in, false to fall back to redirect.
  */
-export async function signInWithGooglePopupIdToken() {
+export async function tryGooglePopupSignIn() {
   if (!firebaseApp) {
     throw new Error("Firebase config is missing. Set VITE_FIREBASE_* env values.");
   }
@@ -140,9 +143,9 @@ export async function signInWithGooglePopupIdToken() {
   provider.setCustomParameters({ prompt: "select_account" });
   try {
     const result = await signInWithPopup(auth, provider);
-    if (!result?.user) return null;
+    if (!result?.user) return false;
     clearOauthPending();
-    return result.user.getIdToken();
+    return true;
   } catch (err) {
     const code = String(err?.code || "");
     if (
@@ -151,55 +154,72 @@ export async function signInWithGooglePopupIdToken() {
       code === "auth/cancelled-popup-request" ||
       code === "auth/operation-not-supported-in-this-environment"
     ) {
-      return null;
+      return false;
     }
     throw err;
   }
 }
 
 /** Shared across React Strict Mode double-mounts: second getRedirectResult() is always null. */
-let redirectIdTokenPromise = null;
-
-/** One-shot hint when we expected OAuth return but got no token (e.g. www vs apex). */
-let lastOAuthRecoveryMessage = null;
-
-export function takeGoogleOAuthRecoveryMessage() {
-  const msg = lastOAuthRecoveryMessage;
-  lastOAuthRecoveryMessage = null;
-  return msg;
-}
+let redirectCompletionPromise = null;
 
 /**
- * Call on app load after returning from Google redirect. Returns ID token or null.
- * Result is cached per page load so Strict Mode / duplicate effects do not consume the redirect twice.
+ * After Google redirect, recover session via getRedirectResult / auth state.
+ * Returns a user-facing recovery message when OAuth was expected but no user appeared.
  */
-export async function consumeGoogleRedirectIdToken() {
+export async function finalizeGoogleRedirect() {
   if (!firebaseApp) return null;
-  if (!redirectIdTokenPromise) {
+  if (!redirectCompletionPromise) {
     const auth = getAuth(firebaseApp);
-    redirectIdTokenPromise = (async () => {
+    redirectCompletionPromise = (async () => {
       const pending = oauthPendingRecent();
       const result = await getRedirectResult(auth).catch(() => null);
       let user = result?.user ?? null;
 
-      // Some browsers lose sessionStorage across auth bounce; still attempt auth-state recovery.
       if (!user) {
         user = await waitForRedirectUser(auth);
       }
 
       if (user) {
         clearOauthPending();
-        return user.getIdToken();
+        return null;
       }
 
       if (pending) {
         clearOauthPending();
-        lastOAuthRecoveryMessage = `Google sign-in did not finish in this tab. ${oauthRecoveryHintForCurrentHost()}`;
+        return `Google sign-in did not finish in this tab. ${oauthRecoveryHintForCurrentHost()}`;
       }
 
       return null;
     })();
   }
-  return redirectIdTokenPromise;
+  return redirectCompletionPromise;
+}
+
+export function mapFirebaseUser(fbUser) {
+  if (!fbUser) return null;
+  const email = fbUser.email || "";
+  const full_name = fbUser.displayName?.trim() || email.split("@")[0] || "Coach";
+  return { id: fbUser.uid, email, full_name };
+}
+
+export async function firebaseSignOut() {
+  if (!firebaseApp) return;
+  await signOut(getAuth(firebaseApp));
+}
+
+export async function firebaseSignInEmailPassword(email, password) {
+  if (!firebaseApp) throw new Error("Firebase config is missing. Set VITE_FIREBASE_* env values.");
+  const auth = getAuth(firebaseApp);
+  await signInWithEmailAndPassword(auth, email.trim(), password);
+}
+
+export async function firebaseSignUpEmailPassword(email, password, displayName) {
+  if (!firebaseApp) throw new Error("Firebase config is missing. Set VITE_FIREBASE_* env values.");
+  const auth = getAuth(firebaseApp);
+  const cred = await createUserWithEmailAndPassword(auth, email.trim(), password);
+  if (displayName?.trim()) {
+    await updateProfile(cred.user, { displayName: displayName.trim() });
+  }
 }
 

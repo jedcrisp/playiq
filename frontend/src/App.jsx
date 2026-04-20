@@ -22,17 +22,20 @@ import FormationIntelligencePage from "./pages/FormationIntelligencePage.jsx";
 import ScriptBuilderPage from "./pages/ScriptBuilderPage.jsx";
 import SituationalPlanningPage from "./pages/SituationalPlanningPage.jsx";
 import GameDayViewPage from "./pages/GameDayViewPage.jsx";
+import { buildMatchupContext } from "./lib/buildMatchupContext.js";
 import {
-  createTeam,
-  fetchOptions,
   fetchRecommend,
   generateAISummary,
+  runMatchupAnalysis,
+  sendCoachingChat,
+} from "./lib/firebaseCallables.js";
+import { fetchOptions } from "./lib/inputOptions.js";
+import {
+  createTeam,
   joinTeam,
   listMemberships,
   listTeams,
-  runMatchupAnalysis,
-  sendCoachingChat,
-} from "./lib/api.js";
+} from "./lib/firestoreTeams.js";
 import {
   createGameplan,
   deleteGameplan,
@@ -104,6 +107,7 @@ const mapGameplan = (x) => ({
   inputs: x.inputs,
   recommendation: x.recommendation,
   notes: x.notes || emptyNotes(),
+  aiSummary: x.ai_summary ?? null,
 });
 const mapOpponent = (x) => ({
   id: x.id,
@@ -353,34 +357,55 @@ export default function App() {
     setAiSummaryError("");
     setAiSummaryLoading(true);
     try {
-      const summary = await generateAISummary({
-        gameplan_id: activeGameplan?.id ?? null,
-        opponent_profile_id: activeOpponent?.id ?? null,
-        inputs: values,
-        recommendation: result,
-        save_to_gameplan: Boolean(activeGameplan?.id),
-      });
+      const matchup_context = buildMatchupContext(
+        values,
+        result,
+        savedGameplans,
+        activeGameplan,
+        opponents,
+        activeOpponent,
+      );
+      const summary = await generateAISummary({ matchup_context });
       setAiSummary(summary);
+      if (activeGameplan?.id && summary?.content) {
+        await updateGameplan(activeGameplan.id, {
+          ai_summary: {
+            content: summary.content,
+            model_name: summary.model_name || "",
+            created_at: new Date().toISOString(),
+          },
+        });
+        await refreshCoreData();
+      }
     } catch (e) {
       setAiSummaryError(e?.message || "Could not generate AI summary");
     } finally {
       setAiSummaryLoading(false);
     }
-  }, [activeGameplan?.id, activeOpponent?.id, values, result]);
+  }, [
+    activeGameplan,
+    activeOpponent,
+    values,
+    result,
+    savedGameplans,
+    opponents,
+    refreshCoreData,
+  ]);
 
   const handleAskMatchupAnalysis = useCallback(
     async (question) => {
       setAnalysisError("");
       setAnalysisLoading(true);
       try {
-        const out = await runMatchupAnalysis({
-          question,
-          gameplan_id: activeGameplan?.id ?? null,
-          opponent_profile_id: activeOpponent?.id ?? null,
-          inputs: values,
-          recommendation: result || {},
-          save: true,
-        });
+        const matchup_context = buildMatchupContext(
+          values,
+          result || {},
+          savedGameplans,
+          activeGameplan,
+          opponents,
+          activeOpponent,
+        );
+        const out = await runMatchupAnalysis({ question, matchup_context });
         setAnalysisAnswer(out.answer || "");
       } catch (e) {
         setAnalysisError(e?.message || "Could not run matchup analysis");
@@ -388,7 +413,7 @@ export default function App() {
         setAnalysisLoading(false);
       }
     },
-    [activeGameplan?.id, activeOpponent?.id, values, result],
+    [activeGameplan, activeOpponent, values, result, savedGameplans, opponents],
   );
 
   const handleSaveAnalysisToNotes = useCallback(async () => {
@@ -410,24 +435,49 @@ export default function App() {
       const nextHistory = [...chatMessages, { role: "user", content: message }];
       setChatMessages(nextHistory);
       try {
+        const matchup_context = buildMatchupContext(
+          values,
+          result || {},
+          savedGameplans,
+          activeGameplan,
+          opponents,
+          activeOpponent,
+        );
         const out = await sendCoachingChat({
           session_id: chatSessionId,
           gameplan_id: activeGameplan?.id ?? null,
           opponent_profile_id: activeOpponent?.id ?? null,
-          inputs: values,
-          recommendation: result || {},
           user_message: message,
           history: nextHistory.map((m) => ({ role: m.role, content: m.content })),
+          matchup_context,
         });
         setChatSessionId(out.session_id);
-        setChatMessages((prev) => [...prev, out.assistant_message]);
+        const am = out.assistant_message;
+        setChatMessages((prev) => [
+          ...prev,
+          {
+            role: am.role,
+            content: am.content,
+            model_name: am.model_name,
+            id: am.id,
+          },
+        ]);
       } catch (e) {
         setChatError(e?.message || "Could not send chat message");
       } finally {
         setChatLoading(false);
       }
     },
-    [activeGameplan?.id, activeOpponent?.id, values, result, chatMessages, chatSessionId],
+    [
+      activeGameplan,
+      activeOpponent,
+      values,
+      result,
+      chatMessages,
+      chatSessionId,
+      savedGameplans,
+      opponents,
+    ],
   );
 
   const loadOpponentAnalytics = useCallback(async () => {

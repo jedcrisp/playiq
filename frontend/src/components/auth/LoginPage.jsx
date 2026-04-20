@@ -24,9 +24,9 @@ export default function LoginPage({
         Sign in
       </h1>
       <p className="mt-2 text-sm text-zinc-600">
-        Access your plans, opponents, and diagrams. Accounts created with Google only work with{" "}
-        <span className="font-medium text-zinc-800">Continue with Google</span>, not this password
-        form.
+        Access your plans, opponents, and diagrams. Use the password fields for email sign-ups; use{" "}
+        <span className="font-medium text-zinc-800">Continue with Google</span> if you registered with
+        Google.
       </p>
       <form
         className="mt-6 space-y-4"

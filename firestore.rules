@@ -13,6 +13,11 @@ service cloud.firestore {
       return signedIn() && request.resource.data[uidField] == request.auth.uid;
     }
 
+    function isTeamMember(teamId) {
+      return signedIn()
+        && exists(/databases/$(database)/documents/team_memberships/$(request.auth.uid + '_' + teamId));
+    }
+
     // User private profile document: /users/{uid}
     match /users/{uid} {
       allow create, read, update, delete: if signedIn() && request.auth.uid == uid;
@@ -56,6 +61,29 @@ service cloud.firestore {
     match /report_notes/{id} {
       allow create: if isCreatingOwner("owner_uid");
       allow read, update, delete: if isOwner("owner_uid");
+    }
+
+    // Teams (Postgres replacement): members can read; owner manages.
+    match /teams/{teamId} {
+      allow read: if signedIn()
+        && (resource.data.owner_uid == request.auth.uid || isTeamMember(teamId));
+      allow create: if isCreatingOwner("owner_uid");
+      allow update, delete: if signedIn() && resource.data.owner_uid == request.auth.uid;
+    }
+
+    match /team_memberships/{membershipId} {
+      allow read: if signedIn() && resource.data.user_uid == request.auth.uid;
+      allow create: if signedIn()
+        && request.resource.data.user_uid == request.auth.uid
+        && membershipId == request.auth.uid + '_' + string(request.resource.data.team_id)
+        && exists(/databases/$(database)/documents/teams/$(string(request.resource.data.team_id)));
+      allow delete: if signedIn() && resource.data.user_uid == request.auth.uid;
+      allow update: if false;
+    }
+
+    // Coaching chat persistence (Cloud Functions admin SDK only).
+    match /coaching_sessions/{id} {
+      allow read, write: if false;
     }
   }
 }

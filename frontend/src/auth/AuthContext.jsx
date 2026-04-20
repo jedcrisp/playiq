@@ -1,16 +1,17 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { fetchMe, getStoredToken, setStoredToken, signIn, signInWithGoogleIdToken, signUp } from "../lib/api.js";
+import { getAuth, onAuthStateChanged } from "firebase/auth";
 import {
-  consumeGoogleRedirectIdToken,
-  signInWithGooglePopupIdToken,
+  finalizeGoogleRedirect,
+  firebaseApp,
+  firebaseSignInEmailPassword,
+  firebaseSignOut,
+  firebaseSignUpEmailPassword,
+  mapFirebaseUser,
   signInWithGoogleRedirect,
-  takeGoogleOAuthRecoveryMessage,
+  tryGooglePopupSignIn,
 } from "../lib/firebase.js";
 
 const AuthContext = createContext(null);
-
-/** One exchange per page load (Strict Mode / parallel effects share this). */
-let googleIdTokenExchangePromise = null;
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
@@ -18,53 +19,24 @@ export function AuthProvider({ children }) {
   const [authError, setAuthError] = useState("");
 
   useEffect(() => {
+    if (!firebaseApp) {
+      setLoading(false);
+      return undefined;
+    }
+    const auth = getAuth(firebaseApp);
     let cancelled = false;
-    (async () => {
-      try {
-        const redirectToken = await consumeGoogleRedirectIdToken();
-        if (cancelled) return;
-        if (!redirectToken) {
-          const recovery = takeGoogleOAuthRecoveryMessage();
-          if (recovery) setAuthError(recovery);
-        }
-        if (redirectToken) {
-          if (!googleIdTokenExchangePromise) {
-            googleIdTokenExchangePromise = signInWithGoogleIdToken(redirectToken);
-          }
-          const data = await googleIdTokenExchangePromise;
-          if (cancelled) return;
-          setAuthError("");
-          setStoredToken(data.access_token);
-          setUser(data.user);
-          setLoading(false);
-          return;
-        }
-      } catch (err) {
-        setStoredToken("");
-        setUser(null);
-        setAuthError(err?.message || "Google sign-in failed. Check API URL and CORS, then try again.");
-        setLoading(false);
-        return;
-      }
-      const token = getStoredToken();
-      if (!token) {
-        setLoading(false);
-        return;
-      }
-      fetchMe()
-        .then((me) => {
-          if (!cancelled) setUser(me);
-        })
-        .catch(() => {
-          setStoredToken("");
-          setUser(null);
-        })
-        .finally(() => {
-          if (!cancelled) setLoading(false);
-        });
-    })();
+    finalizeGoogleRedirect().then((recovery) => {
+      if (!cancelled && recovery) setAuthError(recovery);
+    });
+    const unsub = onAuthStateChanged(auth, (fbUser) => {
+      if (cancelled) return;
+      setUser(mapFirebaseUser(fbUser));
+      if (fbUser) setAuthError("");
+      setLoading(false);
+    });
     return () => {
       cancelled = true;
+      unsub();
     };
   }, []);
 
@@ -77,35 +49,24 @@ export function AuthProvider({ children }) {
         setAuthError("");
       },
       async login(payload) {
-        const data = await signIn(payload);
-        setStoredToken(data.access_token);
-        setUser(data.user);
         setAuthError("");
-        return data.user;
+        await firebaseSignInEmailPassword(payload.email, payload.password);
       },
       async signup(payload) {
-        const data = await signUp(payload);
-        setStoredToken(data.access_token);
-        setUser(data.user);
         setAuthError("");
-        return data.user;
+        await firebaseSignUpEmailPassword(payload.email, payload.password, payload.full_name);
       },
       async loginWithGoogle() {
         setAuthError("");
-        const popupIdToken = await signInWithGooglePopupIdToken();
-        if (popupIdToken) {
-          const data = await signInWithGoogleIdToken(popupIdToken);
-          setStoredToken(data.access_token);
-          setUser(data.user);
-          return data.user;
-        }
+        const ok = await tryGooglePopupSignIn();
+        if (ok && firebaseApp) return getAuth(firebaseApp).currentUser;
         await signInWithGoogleRedirect();
         return null;
       },
-      logout() {
-        setStoredToken("");
-        setUser(null);
+      async logout() {
         setAuthError("");
+        await firebaseSignOut();
+        setUser(null);
       },
       setUser,
     }),
@@ -120,4 +81,3 @@ export function useAuth() {
   if (!ctx) throw new Error("useAuth must be used within AuthProvider");
   return ctx;
 }
-
