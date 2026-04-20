@@ -18,12 +18,20 @@ def _normalize_database_url(url: str) -> str:
     return url
 
 
-DATABASE_URL = _normalize_database_url(
-    os.getenv(
-        "DATABASE_URL",
-        "postgresql+psycopg://presnap:presnap@localhost:5432/presnap",
-    )
-)
+def _resolve_database_url() -> str:
+    # Empty string counts as unset (Railway/UI sometimes stores DATABASE_URL="" which bypasses getenv default).
+    raw = (os.getenv("DATABASE_URL") or "").strip()
+    if raw:
+        return _normalize_database_url(raw)
+    if os.getenv("RAILWAY_ENVIRONMENT"):
+        raise RuntimeError(
+            "DATABASE_URL is missing or empty. In Railway: open your API service → Variables → "
+            "add DATABASE_URL and Reference the Postgres plugin's DATABASE_URL (or paste the connection string)."
+        )
+    return _normalize_database_url("postgresql+psycopg://presnap:presnap@localhost:5432/presnap")
+
+
+DATABASE_URL = _resolve_database_url()
 
 engine = create_engine(DATABASE_URL, future=True, pool_pre_ping=True)
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, future=True)
