@@ -1,5 +1,6 @@
 import { useCallback, useRef } from "react";
 import DiagramField from "./DiagramField.jsx";
+import { pointToPair } from "../../utils/diagramFirestore.js";
 import { routePointsForPreset } from "../../utils/routePresets.js";
 
 function uid(prefix) {
@@ -22,7 +23,12 @@ function toSvgPoint(svg, clientX, clientY) {
 
 function polylineToPath(points) {
   if (!points?.length) return "";
-  return points.map((pt, i) => `${i === 0 ? "M" : "L"} ${pt[0]} ${pt[1]}`).join(" ");
+  return points
+    .map((pt, i) => {
+      const [x, y] = pointToPair(pt);
+      return `${i === 0 ? "M" : "L"} ${x} ${y}`;
+    })
+    .join(" ");
 }
 
 function cloneCanvas(c) {
@@ -47,6 +53,7 @@ export default function DiagramCanvas({
   onAddMotionPoint,
   onAddBlockPoint,
   readOnly = false,
+  referenceImageUrl = null,
 }) {
   const svgRef = useRef(null);
 
@@ -166,7 +173,7 @@ export default function DiagramCanvas({
         role="img"
         aria-label="Play diagram canvas"
       >
-        <DiagramField variant={fieldVariant} />
+        <DiagramField variant={fieldVariant} referenceImageUrl={referenceImageUrl} />
 
         {canvas.motionPaths?.map((mp) => (
           <path

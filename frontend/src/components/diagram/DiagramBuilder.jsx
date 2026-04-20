@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import DiagramCanvas from "./DiagramCanvas.jsx";
 import DiagramToolbar from "./DiagramToolbar.jsx";
+import { uploadDiagramPlayImage } from "../../lib/diagramImageUpload.js";
 import { emptyCanvas } from "../../utils/diagramDefaults.js";
 
 function uid(prefix) {
@@ -16,6 +17,8 @@ function cloneCanvasSafe(c) {
 }
 
 export default function DiagramBuilder({ diagram, onChange, opponents = [] }) {
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [uploadPhotoError, setUploadPhotoError] = useState("");
   const [tool, setTool] = useState("select");
   const [offenseRole, setOffenseRole] = useState("Z");
   const [defenseRole, setDefenseRole] = useState("CB");
@@ -175,6 +178,50 @@ export default function DiagramBuilder({ diagram, onChange, opponents = [] }) {
         />
       </label>
 
+      <div className="rounded-2xl border border-dashed border-zinc-200 bg-zinc-50/80 px-4 py-3">
+        <p className="text-xs font-semibold text-zinc-700">Upload play photo (optional)</p>
+        <p className="mt-1 text-[11px] leading-relaxed text-zinc-500">
+          Drop a whiteboard snap, HUDL still, or wristband photo behind the field. Uses Firebase Storage when
+          <code className="mx-0.5 rounded bg-zinc-200/80 px-1">VITE_FIREBASE_STORAGE_BUCKET</code> is set.
+        </p>
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <label className="inline-flex cursor-pointer items-center rounded-xl bg-white px-3 py-2 text-xs font-semibold text-brand-700 ring-1 ring-brand-200 hover:bg-brand-50">
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              className="sr-only"
+              disabled={uploadingPhoto}
+              onChange={async (e) => {
+                const f = e.target.files?.[0];
+                e.target.value = "";
+                if (!f) return;
+                setUploadPhotoError("");
+                setUploadingPhoto(true);
+                try {
+                  const url = await uploadDiagramPlayImage(f);
+                  onChange((d) => ({ ...d, referenceImageUrl: url }));
+                } catch (err) {
+                  setUploadPhotoError(err?.message || "Upload failed");
+                } finally {
+                  setUploadingPhoto(false);
+                }
+              }}
+            />
+            {uploadingPhoto ? "Uploading…" : "Choose image"}
+          </label>
+          {diagram.referenceImageUrl ? (
+            <button
+              type="button"
+              className="rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold text-zinc-700 hover:bg-zinc-50"
+              onClick={() => onChange((d) => ({ ...d, referenceImageUrl: null }))}
+            >
+              Remove photo
+            </button>
+          ) : null}
+        </div>
+        {uploadPhotoError ? <p className="mt-2 text-xs text-red-600">{uploadPhotoError}</p> : null}
+      </div>
+
       <DiagramToolbar
         tool={tool}
         onToolChange={setTool}
@@ -221,6 +268,7 @@ export default function DiagramBuilder({ diagram, onChange, opponents = [] }) {
         blockDraft={blockDraft}
         onAddMotionPoint={handleAddMotionPoint}
         onAddBlockPoint={handleAddBlockPoint}
+        referenceImageUrl={diagram.referenceImageUrl || null}
       />
     </div>
   );

@@ -42,6 +42,7 @@ export default function LinkedDiagramsPanel({ diagrams }) {
                 onSelectMarker={() => {}}
                 motionDraft={[]}
                 blockDraft={[]}
+                referenceImageUrl={d.referenceImageUrl || null}
               />
             </div>
           </div>

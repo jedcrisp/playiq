@@ -14,6 +14,7 @@ import {
 } from "firebase/firestore";
 import { firebaseApp } from "./firebase.js";
 import { db } from "./firestoreClient.js";
+import { sanitizeCanvasForFirestore } from "../utils/diagramFirestore.js";
 
 function requireUserUid() {
   if (!firebaseApp || !db) {
@@ -51,6 +52,7 @@ function mapDoc(snapshot) {
     visibility: data.visibility || "private",
     team_id: data.team_id ?? null,
     canvas: data.canvas || {},
+    reference_image_url: data.reference_image_url || null,
     created_at: asIso(data.created_at),
     updated_at: asIso(data.updated_at),
   };
@@ -79,7 +81,8 @@ export async function createDiagram(payload) {
     install_note: payload.install_note || "",
     visibility: payload.visibility || "private",
     team_id: payload.team_id ?? null,
-    canvas: payload.canvas || {},
+    canvas: sanitizeCanvasForFirestore(payload.canvas || {}),
+    reference_image_url: payload.reference_image_url || null,
     created_at: serverTimestamp(),
     updated_at: serverTimestamp(),
   });
@@ -96,7 +99,8 @@ export async function createDiagram(payload) {
       install_note: payload.install_note || "",
       visibility: payload.visibility || "private",
       team_id: payload.team_id ?? null,
-      canvas: payload.canvas || {},
+      canvas: sanitizeCanvasForFirestore(payload.canvas || {}),
+      reference_image_url: payload.reference_image_url || null,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
@@ -119,7 +123,8 @@ export async function updateDiagramById(id, patch) {
   if ("install_note" in patch) update.install_note = patch.install_note;
   if ("visibility" in patch) update.visibility = patch.visibility;
   if ("team_id" in patch) update.team_id = patch.team_id;
-  if ("canvas" in patch) update.canvas = patch.canvas;
+  if ("canvas" in patch) update.canvas = sanitizeCanvasForFirestore(patch.canvas || {});
+  if ("reference_image_url" in patch) update.reference_image_url = patch.reference_image_url;
   await updateDoc(ref, update);
   return { ok: true };
 }

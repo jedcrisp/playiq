@@ -1,0 +1,15 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Play photos / uploads for diagram editor (client uploads after auth).
+    match /users/{userId}/diagram_plays/{fileName} {
+      // Download URLs include an access token; reads still require the object to exist.
+      allow read: if resource != null;
+      allow create: if request.auth != null
+        && request.auth.uid == userId
+        && request.resource.size < 3 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+      allow delete: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}

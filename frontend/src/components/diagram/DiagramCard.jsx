@@ -20,6 +20,11 @@ export default function DiagramCard({ diagram, onEdit, onDelete }) {
         ) : (
           <p className="mt-2 text-xs text-zinc-400">No concept link</p>
         )}
+        {diagram.referenceImageUrl ? (
+          <p className="mt-2 text-[10px] font-semibold uppercase tracking-wide text-indigo-700">
+            Reference photo attached
+          </p>
+        ) : null}
       </div>
       <div className="flex flex-1 flex-col justify-end gap-3 px-5 py-4">
         <p className="text-[11px] text-zinc-400">Updated {updated}</p>

@@ -23,10 +23,12 @@ export default function DiagramBuilderModal({
   onSave,
 }) {
   const [draft, setDraft] = useState(null);
+  const [saveError, setSaveError] = useState("");
 
   useEffect(() => {
     if (!open) {
       setDraft(null);
+      setSaveError("");
       return;
     }
     if (diagram) {
@@ -59,8 +61,13 @@ export default function DiagramBuilderModal({
   if (!open || !draft) return null;
 
   const handleSave = async () => {
-    await onSave?.(draft);
-    onClose();
+    setSaveError("");
+    try {
+      await onSave?.(draft);
+      onClose();
+    } catch (e) {
+      setSaveError(e?.message || "Could not save diagram. Check Firestore rules and your connection.");
+    }
   };
 
   return (
@@ -86,7 +93,7 @@ export default function DiagramBuilderModal({
               </p>
             ) : (
               <p className="mt-1 text-xs text-zinc-500">
-                Save a gameplan to attach diagrams to that install package on this device.
+                Save a gameplan to link diagrams to that install package.
               </p>
             )}
           </div>
@@ -103,7 +110,10 @@ export default function DiagramBuilderModal({
           <DiagramBuilder diagram={draft} onChange={setDraft} opponents={opponents} />
         </div>
 
-        <div className="flex flex-wrap justify-end gap-3 border-t border-zinc-100 px-6 py-4">
+        <div className="flex flex-wrap items-center justify-end gap-3 border-t border-zinc-100 px-6 py-4">
+          {saveError ? (
+            <p className="mr-auto max-w-md text-sm text-red-600">{saveError}</p>
+          ) : null}
           <button
             type="button"
             onClick={onClose}

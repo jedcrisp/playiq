@@ -22,6 +22,7 @@ export function createEmptyDiagram({ name = "Untitled play", link = {} }) {
     linkedOpponentId: link.linkedOpponentId ?? null,
     linkedCallSheetRank: link.linkedCallSheetRank ?? null,
     installNote: "",
+    referenceImageUrl: null,
     canvas: emptyCanvas(),
     createdAt: now,
     updatedAt: now,
