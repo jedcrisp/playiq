@@ -23,7 +23,11 @@ export default function LoginPage({
       <h1 className="font-display mt-3 text-3xl font-semibold tracking-tight text-zinc-950">
         Sign in
       </h1>
-      <p className="mt-2 text-sm text-zinc-600">Access your plans, opponents, and diagrams.</p>
+      <p className="mt-2 text-sm text-zinc-600">
+        Access your plans, opponents, and diagrams. Accounts created with Google only work with{" "}
+        <span className="font-medium text-zinc-800">Continue with Google</span>, not this password
+        form.
+      </p>
       <form
         className="mt-6 space-y-4"
         onSubmit={async (e) => {

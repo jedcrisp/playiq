@@ -45,7 +45,10 @@ def signin(body: SignInRequest, db: Session = Depends(get_db)) -> TokenResponse:
     if not user or not verify_password(body.password, user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid email or password",
+            detail=(
+                "Invalid email or password. If you first signed in with Google, use "
+                "“Continue with Google”—that account does not use an email password here."
+            ),
         )
     return TokenResponse(access_token=create_access_token(str(user.id)), user=user)  # type: ignore[arg-type]
 
