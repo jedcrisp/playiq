@@ -27,6 +27,7 @@ Backend (`api` service / local shell):
 - `AI_MODEL` (optional, default `gpt-4o-mini`)
 - `AI_BASE_URL` (optional, default `https://api.openai.com/v1`)
 - `CORS_ALLOW_ORIGINS` (optional): comma-separated **exact** browser origins (scheme + host + port, no path). Include **both** apex and `www` if you use both, e.g. `https://www.getplayiq.app,https://getplayiq.app`. **Required** for browser calls from your production site to the API; without it, `/api/*` preflight fails with “No `Access-Control-Allow-Origin` header”.
+- `FRONTEND_URL` (optional): single origin such as `https://www.getplayiq.app` — used as a fallback when `CORS_ALLOW_ORIGINS` is unset (same rules: no trailing slash).
 - `CORS_ALLOW_ORIGIN_REGEX` (optional): extra allowed-origin regex OR’d with localhost (e.g. `https://.*\\.vercel\\.app` for all Vercel previews)
 
 Frontend:
@@ -109,7 +110,9 @@ Serve the FastAPI app behind your reverse proxy and point the frontend to the sa
 
    `https://www.getplayiq.app,https://getplayiq.app`
 
-   If this is wrong or empty, the **preflight** to `POST /api/auth/google` fails and the console shows **CORS** errors (not Firebase).
+   Alternatively, set **`FRONTEND_URL`** to a single origin (e.g. `https://www.getplayiq.app`) if you prefer one variable.
+
+   If both are wrong or empty, the **preflight** to `POST /api/auth/google` fails and the console shows **CORS** errors (not Firebase).
 
    Optional: `CORS_ALLOW_ORIGIN_REGEX` = `https://.*\.vercel\.app` for Vercel preview URLs.
 

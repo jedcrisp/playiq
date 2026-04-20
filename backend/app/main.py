@@ -52,10 +52,13 @@ _DEFAULT_LOCAL_ORIGINS = [
 
 def _cors_origins() -> list[str]:
     """Merge local dev origins with CORS_ALLOW_ORIGINS (comma-separated, e.g. Vercel production URL)."""
-    extra = os.getenv("CORS_ALLOW_ORIGINS", "")
+    extra = (os.getenv("CORS_ALLOW_ORIGINS") or "").strip()
+    # Single-origin fallback (common on Railway) if CORS_ALLOW_ORIGINS was never set.
+    if not extra:
+        extra = (os.getenv("FRONTEND_URL") or "").strip()
     out = list(_DEFAULT_LOCAL_ORIGINS)
     for part in extra.split(","):
-        origin = part.strip()
+        origin = part.strip().rstrip("/")
         if origin and origin not in out:
             out.append(origin)
     return out
@@ -86,10 +89,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-if os.getenv("RAILWAY_ENVIRONMENT") and not (os.getenv("CORS_ALLOW_ORIGINS") or "").strip():
+if os.getenv("RAILWAY_ENVIRONMENT") and not (os.getenv("CORS_ALLOW_ORIGINS") or "").strip() and not (
+    os.getenv("FRONTEND_URL") or ""
+).strip():
     logger.warning(
-        "CORS_ALLOW_ORIGINS is empty. Set it to your site origin(s), e.g. "
-        "https://www.getplayiq.app,https://getplayiq.app — or browser requests will fail CORS preflight."
+        "No browser origin configured for CORS. Set CORS_ALLOW_ORIGINS or FRONTEND_URL, e.g. "
+        "https://www.getplayiq.app,https://getplayiq.app — or preflight requests from the SPA will fail."
     )
 
 
