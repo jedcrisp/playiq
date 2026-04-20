@@ -8,7 +8,7 @@ from google.auth.transport import requests as google_requests
 from google.oauth2 import id_token as google_id_token
 from pydantic import EmailStr, TypeAdapter, ValidationError
 from sqlalchemy import select
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from ..auth import create_access_token, get_current_user, hash_password, verify_password
@@ -79,19 +79,33 @@ def signin_google(body: GoogleSignInRequest, db: Session = Depends(get_db)) -> T
             status_code=400,
             detail="Google token contains an invalid email address",
         ) from None
-    name = (payload or {}).get("name") or email.split("@")[0]
+    name_raw = (payload or {}).get("name") or email.split("@")[0]
+    name_str = name_raw if isinstance(name_raw, str) else str(name_raw)
+    full_name = name_str.strip()[:120] or "Coach"
     try:
         user = db.scalar(select(User).where(User.email == email))
         if not user:
-            user = User(
+            new_user = User(
                 email=email,
-                full_name=name.strip()[:120] or "Coach",
+                full_name=full_name,
                 # user authenticates via Google for this path; no password login assumed
                 password_hash=hash_password(os.urandom(24).hex()),
             )
-            db.add(user)
-            db.commit()
-            db.refresh(user)
+            db.add(new_user)
+            try:
+                db.commit()
+                db.refresh(new_user)
+                user = new_user
+            except IntegrityError:
+                # Concurrent first sign-in for the same email: other request created the row.
+                db.rollback()
+                user = db.scalar(select(User).where(User.email == email))
+                if not user:
+                    logger.exception("IntegrityError on Google sign-in insert but no user row for %s", email)
+                    raise HTTPException(
+                        status_code=503,
+                        detail="Could not complete sign-in. Please try again.",
+                    ) from None
         access_token = create_access_token(str(user.id))
         # Fail fast with a clear log if ORM user cannot become UserOut (e.g. email shape).
         user_out = UserOut.model_validate(user)
