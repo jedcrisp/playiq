@@ -49,6 +49,12 @@ _DEFAULT_LOCAL_ORIGINS = [
     "http://127.0.0.1:4173",
 ]
 
+# Always allow these when deployed on Railway so the live SPA is not blocked if env is mis-set.
+_RAILWAY_DEFAULT_SITE_ORIGINS = [
+    "https://www.getplayiq.app",
+    "https://getplayiq.app",
+]
+
 
 def _cors_origins() -> list[str]:
     """Merge local dev origins with CORS_ALLOW_ORIGINS (comma-separated, e.g. Vercel production URL)."""
@@ -57,6 +63,10 @@ def _cors_origins() -> list[str]:
     if not extra:
         extra = (os.getenv("FRONTEND_URL") or "").strip()
     out = list(_DEFAULT_LOCAL_ORIGINS)
+    if os.getenv("RAILWAY_ENVIRONMENT"):
+        for origin in _RAILWAY_DEFAULT_SITE_ORIGINS:
+            if origin not in out:
+                out.append(origin)
     for part in extra.split(","):
         origin = part.strip().rstrip("/")
         if origin and origin not in out:
