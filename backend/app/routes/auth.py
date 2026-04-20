@@ -6,6 +6,7 @@ import os
 from fastapi import APIRouter, Depends, HTTPException, status
 from google.auth.transport import requests as google_requests
 from google.oauth2 import id_token as google_id_token
+from pydantic import ValidationError
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
@@ -49,6 +50,7 @@ def signin(body: SignInRequest, db: Session = Depends(get_db)) -> TokenResponse:
 
 @router.post("/google", response_model=TokenResponse)
 def signin_google(body: GoogleSignInRequest, db: Session = Depends(get_db)) -> TokenResponse:
+    """Exchange a Firebase ID token for a PlayIQ JWT. Failures are logged; avoid raw ASGI 500 with no JSON."""
     project_id = os.getenv("FIREBASE_PROJECT_ID")
     if not project_id:
         logger.error("FIREBASE_PROJECT_ID is not set on the API host")
@@ -81,12 +83,27 @@ def signin_google(body: GoogleSignInRequest, db: Session = Depends(get_db)) -> T
             db.add(user)
             db.commit()
             db.refresh(user)
-        return TokenResponse(access_token=create_access_token(str(user.id)), user=user)  # type: ignore[arg-type]
+        access_token = create_access_token(str(user.id))
+        # Fail fast with a clear log if ORM user cannot become UserOut (e.g. email shape).
+        user_out = UserOut.model_validate(user)
+        return TokenResponse(access_token=access_token, user=user_out)
     except SQLAlchemyError as exc:
         logger.exception("Database error during Google sign-in")
         raise HTTPException(
             status_code=503,
             detail="Could not complete sign-in (database error). Try again in a moment.",
+        ) from exc
+    except ValidationError as exc:
+        logger.exception("User payload failed validation after Google sign-in")
+        raise HTTPException(
+            status_code=500,
+            detail="Sign-in succeeded but user profile could not be serialized. Check server logs.",
+        ) from exc
+    except Exception as exc:
+        logger.exception("Unexpected error during Google sign-in (hash/JWT/response)")
+        raise HTTPException(
+            status_code=500,
+            detail="Google sign-in failed on the server. Check API deploy logs for the traceback.",
         ) from exc
 
 
