@@ -2,7 +2,8 @@ fastapi==0.115.6
 uvicorn[standard]==0.32.1
 pydantic==2.10.3
 sqlalchemy==2.0.36
-psycopg[binary]==3.2.3
+# 3.2.3 lacks wheels for newer macOS ARM (e.g. macosx_26_*); uv resolver fails without a matching wheel.
+psycopg[binary]==3.2.13
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
 email-validator==2.2.0
