@@ -55,7 +55,8 @@ export default function PlanWorkspace({
               </h2>
               <p className="mt-2 max-w-2xl text-sm leading-relaxed text-zinc-600">
                 Build from film, then generate installs. Load an opponent profile from the
-                Opponents tab to auto-fill tendencies.
+                Opponents tab to auto-fill tendencies. Changing defensive front re-sequences the
+                top three installs (same rule pack, different #1 emphasis) when you generate the plan.
               </p>
             </div>
             <div className="pt-8">

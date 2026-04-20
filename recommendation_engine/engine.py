@@ -23,6 +23,27 @@ from .options import INPUT_OPTIONS
 from .rules import RULES
 from .style_hints import style_appendix
 
+# Same three installs can apply; rotating by front surfaces different #1 emphasis for film review.
+_FRONT_RANK_SHIFT: dict[str, int] = {
+    "4-3": 0,
+    "3-4": 1,
+    "4-2-5": 2,
+    "3-3-5": 3,
+    "Multiple / Hybrid": 1,
+}
+
+
+def _reorder_concepts_for_defensive_front(
+    concepts: list[ConceptPlan],
+    defensive_front: str,
+) -> list[ConceptPlan]:
+    if len(concepts) < 2:
+        return concepts
+    shift = _FRONT_RANK_SHIFT.get(defensive_front.strip(), 0) % len(concepts)
+    if shift == 0:
+        return concepts
+    return concepts[shift:] + concepts[:shift]
+
 
 def _default_pack(payload: dict[str, str]) -> tuple[ConceptPlan, ConceptPlan, ConceptPlan]:
     coverage = payload.get("coverage_shell", "")
@@ -50,13 +71,14 @@ def _strategic_summary(
     matched_rule_name: str,
     lead: ConceptPlan,
 ) -> str:
+    df = normalized.get("defensive_front", "").strip() or "declared structure"
     cov = normalized.get("coverage_shell", "this shell")
     pr = normalized.get("pressure_tendency", "mixed pressure")
     defender = normalized.get("defender_to_attack", "the conflict defender")
     wk = normalized.get("weakness_type", "declared weakness")
     st = normalized.get("offensive_style", "your system")
     return (
-        f"Primary stress: {defender} ({wk}) vs {cov} with {pr} tendencies. "
+        f"Front structure: {df}. Primary stress: {defender} ({wk}) vs {cov} with {pr} tendencies. "
         f"Lead call: {lead.concept}, sequenced for {st} tempo and answers. "
         f"Engine route: {matched_rule_name.replace('_', ' ')}."
     )
@@ -99,6 +121,11 @@ def recommend(payload: dict[str, str]) -> dict[str, Any]:
         concepts = list(best.concepts[:3])
     else:
         concepts = list(_default_pack(normalized))
+
+    concepts = _reorder_concepts_for_defensive_front(
+        concepts,
+        normalized.get("defensive_front", ""),
+    )
 
     style = normalized.get("offensive_style", "Balanced")
     appendix = style_appendix(style)
