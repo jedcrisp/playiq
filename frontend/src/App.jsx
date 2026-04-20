@@ -27,10 +27,6 @@ import {
   fetchOptions,
   fetchRecommend,
   generateAISummary,
-  getFormationIntelligence,
-  getOpponentAnalytics,
-  getOpponentBridgeSummary,
-  getSelfScoutAnalytics,
   joinTeam,
   listMemberships,
   listTeams,
@@ -83,6 +79,12 @@ import {
   updateSituationCall,
 } from "./lib/firestoreSituations.js";
 import { createReportNote } from "./lib/firestoreReportNotes.js";
+import {
+  getFormationIntelligence,
+  getOpponentAnalytics,
+  getOpponentBridgeSummary,
+  getSelfScoutAnalytics,
+} from "./lib/firestoreAnalytics.js";
 import { selectDiagramsForInstall } from "./lib/diagramStorage.js";
 import { tendenciesToFormValues } from "./lib/opponentStorage.js";
 

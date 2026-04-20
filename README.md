@@ -128,7 +128,7 @@ Serve the FastAPI app behind your reverse proxy and point the frontend to the sa
 9. **Firebase Google sign-in:** the app attempts **popup** first and falls back to
    **redirect** when popup is blocked/unavailable. In [Firebase Console](https://console.firebase.google.com/) → Authentication → Settings → **Authorized domains**, add your production hosts (e.g. `getplayiq.app`, `www.getplayiq.app`, and your Vercel domain).
 
-10. **Firestore rules/indexes (required for gameplans):**
+10. **Firestore rules/indexes (required for Firestore-backed domains):**
    - Deploy `firestore.rules`
    - Deploy `firestore.indexes.json`
    - Rules are owner-based (`owner_uid == request.auth.uid`) and require Firebase auth.
@@ -164,7 +164,8 @@ Diagrams and install sheets are stored in **`localStorage`** (`playiq_diagrams_v
 2. **Protected app:** Planner/dashboard is only accessible after auth; refresh keeps session via bearer token in browser storage.
 3. **Team onboarding:** After signup, create a team or join an existing team from Team setup; you can continue solo.
 4. **Database-backed records:** gameplans, opponents, diagrams, scouting,
-   scripts, situations, and report notes are stored in Firestore (owner-scoped rules).
+   scripts, situations, report notes, and analytics views are now Firestore-driven
+   (owner-scoped rules).
    Auth, recommendation generation, and AI endpoints remain API-backed.
 5. **Gameplan sharing:** In **Save gameplan**, choose visibility:
    - `Private` (only owner)
