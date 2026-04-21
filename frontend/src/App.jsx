@@ -30,12 +30,7 @@ import {
   sendCoachingChat,
 } from "./lib/firebaseCallables.js";
 import { fetchOptions } from "./lib/inputOptions.js";
-import {
-  createTeam,
-  joinTeam,
-  listMemberships,
-  listTeams,
-} from "./lib/firestoreTeams.js";
+import { createTeam, joinTeam, listMemberships } from "./lib/firestoreTeams.js";
 import {
   createGameplan,
   deleteGameplan,
@@ -161,7 +156,6 @@ export default function App() {
   const [savedGameplans, setSavedGameplans] = useState([]);
   const [opponents, setOpponents] = useState([]);
   const [diagrams, setDiagrams] = useState([]);
-  const [teams, setTeams] = useState([]);
   const [memberships, setMemberships] = useState([]);
   const [allowSolo, setAllowSolo] = useState(false);
   const [saveModalOpen, setSaveModalOpen] = useState(false);
@@ -219,11 +213,10 @@ export default function App() {
   const activeTeamId = activeMembership?.team_id ?? null;
 
   const refreshCoreData = useCallback(async () => {
-    const [gps, ops, dgs, ts, ms, scr, sit] = await Promise.all([
+    const [gps, ops, dgs, ms, scr, sit] = await Promise.all([
       listGameplans(),
       listOpponents(),
       listDiagrams(),
-      listTeams(),
       listMemberships(),
       listScripts(),
       listSituationPlans(),
@@ -231,7 +224,6 @@ export default function App() {
     setSavedGameplans(gps.map(mapGameplan));
     setOpponents(ops.map(mapOpponent));
     setDiagrams(dgs.map(mapDiagram));
-    setTeams(ts);
     setMemberships(ms);
     setScripts(scr);
     setSituationPlans(sit);
@@ -647,7 +639,6 @@ export default function App() {
     return (
       <div className="min-h-screen bg-zinc-50 px-4 py-12">
         <TeamSetupPage
-          teams={teams}
           onCreateTeam={async (payload) => {
             await createTeam(payload);
             await refreshCoreData();

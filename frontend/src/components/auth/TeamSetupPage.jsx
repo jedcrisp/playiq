@@ -1,14 +1,10 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
-export default function TeamSetupPage({ teams, onCreateTeam, onJoinTeam, onContinueSolo }) {
+export default function TeamSetupPage({ onCreateTeam, onJoinTeam, onContinueSolo }) {
   const [name, setName] = useState("");
-  const [teamId, setTeamId] = useState("");
+  const [joinTeamId, setJoinTeamId] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    if (teams?.length && !teamId) setTeamId(String(teams[0].id));
-  }, [teams, teamId]);
 
   return (
     <div className="mx-auto max-w-2xl rounded-3xl border border-zinc-200 bg-white p-8 shadow-card">
@@ -17,6 +13,8 @@ export default function TeamSetupPage({ teams, onCreateTeam, onJoinTeam, onConti
       </h1>
       <p className="mt-2 text-sm text-zinc-600">
         Create a team or join one to collaborate on shared gameplans and opponent profiles.
+        Anything you create here is saved to your signed-in account automatically—you do not
+        add teams or game data in the Firebase console.
       </p>
       <div className="mt-6 grid gap-6 sm:grid-cols-2">
         <form
@@ -56,11 +54,17 @@ export default function TeamSetupPage({ teams, onCreateTeam, onJoinTeam, onConti
           className="space-y-3 rounded-2xl border border-zinc-200 p-4"
           onSubmit={async (e) => {
             e.preventDefault();
-            if (!teamId) return;
+            const raw = joinTeamId.trim();
+            const digits = raw.replace(/\D/g, "");
+            if (!digits) {
+              setError("Enter the numeric team ID your admin shared.");
+              return;
+            }
             setError("");
             setLoading(true);
             try {
-              await onJoinTeam({ team_id: Number(teamId), role: "coach" });
+              await onJoinTeam({ team_id: digits, role: "coach" });
+              setJoinTeamId("");
             } catch (err) {
               setError(err.message || "Failed joining team");
             } finally {
@@ -69,21 +73,21 @@ export default function TeamSetupPage({ teams, onCreateTeam, onJoinTeam, onConti
           }}
         >
           <p className="text-sm font-semibold text-zinc-900">Join existing team</p>
-          <select
-            value={teamId}
-            onChange={(e) => setTeamId(e.target.value)}
+          <p className="text-xs text-zinc-500">
+            Paste the numeric team ID your coach or admin shared. (You have no teams yet, so
+            there is nothing to pick from a list.)
+          </p>
+          <input
+            value={joinTeamId}
+            onChange={(e) => setJoinTeamId(e.target.value)}
+            placeholder="e.g. 1776728336184777"
             className="w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm"
-          >
-            {!teams?.length ? <option value="">No teams found</option> : null}
-            {teams?.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.name}
-              </option>
-            ))}
-          </select>
+            inputMode="numeric"
+            autoComplete="off"
+          />
           <button
             type="submit"
-            disabled={loading || !teamId}
+            disabled={loading || !joinTeamId.trim()}
             className="rounded-xl border border-zinc-300 px-4 py-2 text-sm font-semibold text-zinc-800"
           >
             Join

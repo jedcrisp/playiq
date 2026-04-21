@@ -58,10 +58,14 @@ export async function uploadDiagramPlayImage(file) {
     );
   }
   const auth = getAuth(firebaseApp);
-  const uid = auth.currentUser?.uid;
-  if (!uid) throw new Error("Sign in to upload images.");
+  const user = auth.currentUser;
+  if (!user?.uid) throw new Error("Sign in to upload images.");
+  const uid = user.uid;
+  await user.getIdToken();
   const blob = await compressImageToJpegBlob(file);
-  const storage = getStorage(firebaseApp);
+  const raw = (bucket || firebaseApp.options?.storageBucket || "").trim();
+  const gsUrl = raw.startsWith("gs://") ? raw : raw ? `gs://${raw}` : "";
+  const storage = gsUrl ? getStorage(firebaseApp, gsUrl) : getStorage(firebaseApp);
   const name = `${Date.now()}_${Math.random().toString(36).slice(2, 9)}.jpg`;
   const path = `users/${uid}/diagram_plays/${name}`;
   const sref = ref(storage, path);

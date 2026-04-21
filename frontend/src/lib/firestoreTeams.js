@@ -1,6 +1,7 @@
 import { getAuth } from "firebase/auth";
 import {
   collection,
+  deleteDoc,
   doc,
   getDoc,
   getDocs,
@@ -8,7 +9,6 @@ import {
   serverTimestamp,
   setDoc,
   where,
-  writeBatch,
 } from "firebase/firestore";
 import { firebaseApp } from "./firebase.js";
 import { db } from "./firestoreClient.js";
@@ -99,20 +99,25 @@ export async function createTeam(payload) {
     }
   }
 
-  const batch = writeBatch(db);
-  batch.set(teamRef, {
+  // Two commits (not a batch): membership rules require exists(/teams/{id}),
+  // and exists() does not see uncommitted writes from the same batch.
+  await setDoc(teamRef, {
     owner_uid: uid,
     name: cleaned,
     created_at: serverTimestamp(),
     updated_at: serverTimestamp(),
   });
-  batch.set(memRef, {
-    user_uid: uid,
-    team_id: teamId,
-    role: "admin",
-    created_at: serverTimestamp(),
-  });
-  await batch.commit();
+  try {
+    await setDoc(memRef, {
+      user_uid: uid,
+      team_id: teamId,
+      role: "admin",
+      created_at: serverTimestamp(),
+    });
+  } catch (err) {
+    await deleteDoc(teamRef).catch(() => {});
+    throw err;
+  }
   const row = await getDoc(teamRef);
   return mapTeam(row);
 }

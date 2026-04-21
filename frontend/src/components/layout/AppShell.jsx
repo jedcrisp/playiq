@@ -1,20 +1,8 @@
-/**
- * Suggested path for a typical week — not the only way to use the app, but it
- * answers “what order do I do things in?” at a glance.
- */
-const SUGGESTED_FLOW = [
-  { tab: "opponents", step: "1", label: "Opponent", hint: "Who you’re prepping for" },
-  { tab: "scouting", step: "2", label: "Scouting", hint: "Film & tendencies data" },
-  { tab: "plan", step: "3", label: "Gameplan", hint: "Inputs → concepts → save" },
-  { tab: "game-day", step: "4", label: "Gameday", hint: "Scripts, situations, calls" },
-];
-
-/** Workspace areas: ordered to match how most coaches work the problem. */
+/** Workspace areas — one combined menu (optgroups) so navigation is a single control. */
 const WORKSPACE_GROUPS = [
   {
     id: "build",
     label: "Data & gameplan",
-    hint: "Opponent → scouting rows → planner → diagrams",
     tabs: [
       { id: "opponents", label: "Opponents" },
       { id: "scouting", label: "Scouting data" },
@@ -25,7 +13,6 @@ const WORKSPACE_GROUPS = [
   {
     id: "analyze",
     label: "Insights",
-    hint: "Tendencies, self-scout, formations, written reports",
     tabs: [
       { id: "opponent-tendencies", label: "Opponent tendencies" },
       { id: "self-scout", label: "Self-scout" },
@@ -36,7 +23,6 @@ const WORKSPACE_GROUPS = [
   {
     id: "prepare",
     label: "Game week",
-    hint: "Scripts, situations, then AI helpers if you want them",
     tabs: [
       { id: "scripts", label: "Script builder" },
       { id: "situations", label: "Situational planning" },
@@ -47,64 +33,23 @@ const WORKSPACE_GROUPS = [
   },
 ];
 
-function groupForActiveTab(activeTab) {
+function ChevronDownIcon({ className }) {
   return (
-    WORKSPACE_GROUPS.find((g) => g.tabs.some((t) => t.id === activeTab)) ?? WORKSPACE_GROUPS[0]
-  );
-}
-
-function WorkflowStrip({ activeTab, onTabChange }) {
-  return (
-    <div className="mb-4 rounded-2xl border border-brand-200/60 bg-gradient-to-r from-brand-50/90 to-white px-3 py-3 sm:px-4">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-        <div className="min-w-0">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-brand-800">Suggested order</p>
-          <p className="mt-0.5 text-xs text-zinc-600">
-            Most coaches: set the opponent, log scouting, build the plan, then open gameday tools. Other
-            screens stay available below.
-          </p>
-        </div>
-        <nav
-          className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto pb-0.5 sm:justify-end"
-          aria-label="Suggested workflow"
-        >
-          {SUGGESTED_FLOW.map((s, i) => {
-            const on = activeTab === s.tab;
-            return (
-              <div key={s.tab} className="flex shrink-0 items-center">
-                {i > 0 ? (
-                  <span className="mx-0.5 text-zinc-300 select-none" aria-hidden>
-                    →
-                  </span>
-                ) : null}
-                <button
-                  type="button"
-                  title={s.hint}
-                  onClick={() => onTabChange(s.tab)}
-                  className={`rounded-xl border px-2.5 py-2 text-left transition-colors sm:px-3 ${
-                    on
-                      ? "border-brand-500 bg-white text-brand-950 shadow-sm ring-1 ring-brand-200"
-                      : "border-transparent bg-white/60 text-zinc-700 hover:border-zinc-200 hover:bg-white"
-                  }`}
-                >
-                  <span className="block text-[10px] font-bold text-brand-700">Step {s.step}</span>
-                  <span className="block text-xs font-semibold text-zinc-900">{s.label}</span>
-                </button>
-              </div>
-            );
-          })}
-        </nav>
-      </div>
-    </div>
+    <svg className={className} viewBox="0 0 20 20" fill="currentColor" aria-hidden>
+      <path
+        fillRule="evenodd"
+        d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.94a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"
+        clipRule="evenodd"
+      />
+    </svg>
   );
 }
 
 export default function AppShell({ children, activeTab, onTabChange, user, onSignOut }) {
-  const currentGroup = typeof activeTab === "string" ? groupForActiveTab(activeTab) : WORKSPACE_GROUPS[0];
+  const showNav = typeof activeTab === "string" && typeof onTabChange === "function";
 
   return (
     <div className="relative min-h-screen bg-zinc-50">
-      {/* Ambient gradient — subtle, professional */}
       <div
         className="pointer-events-none fixed inset-0 overflow-hidden print:hidden"
         aria-hidden
@@ -115,28 +60,95 @@ export default function AppShell({ children, activeTab, onTabChange, user, onSig
       </div>
 
       <div className="relative">
-        <header className="sticky top-0 z-30 border-b border-zinc-200/80 bg-white/75 shadow-sm shadow-zinc-950/5 backdrop-blur-xl backdrop-saturate-150 print:hidden">
-          <div className="mx-auto max-w-7xl px-4 pt-3 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex min-w-0 items-center gap-3">
-                <div
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-brand-600 to-brand-800 text-sm font-bold tracking-tight text-white shadow-lg shadow-brand-600/30 ring-1 ring-white/20"
-                  aria-hidden
-                >
-                  PS
+        <header className="sticky top-0 z-30 border-b border-zinc-200/90 bg-white/90 shadow-sm shadow-zinc-950/5 backdrop-blur-xl backdrop-saturate-150 print:hidden">
+          <div className="mx-auto max-w-7xl px-4 py-3 sm:px-6 lg:px-8">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:gap-6">
+              <div className="flex min-w-0 flex-1 items-center justify-between gap-3 lg:justify-start">
+                <div className="flex min-w-0 items-center gap-3">
+                  <div
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-brand-600 to-brand-800 text-sm font-bold tracking-tight text-white shadow-lg shadow-brand-600/30 ring-1 ring-white/20"
+                    aria-hidden
+                  >
+                    PS
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-display text-base font-semibold tracking-tight text-zinc-900">
+                      PlayIQ
+                    </p>
+                    <p className="truncate text-xs font-medium text-zinc-500">
+                      Opponent planning & gameplan system
+                    </p>
+                  </div>
                 </div>
-                <div className="min-w-0">
-                  <p className="font-display text-base font-semibold tracking-tight text-zinc-900">
-                    PlayIQ
-                  </p>
-                  <p className="truncate text-xs font-medium text-zinc-500">
-                    Opponent planning & gameplan system
-                  </p>
-                </div>
+                {user && !showNav ? (
+                  <div className="flex shrink-0 items-center gap-2 text-xs font-medium text-zinc-500 lg:hidden">
+                    <span className="max-w-[7rem] truncate" title={user.full_name || user.email}>
+                      {user.full_name || user.email}
+                    </span>
+                    {onSignOut ? (
+                      <button
+                        type="button"
+                        onClick={onSignOut}
+                        className="rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-zinc-700 hover:bg-zinc-50"
+                      >
+                        Sign out
+                      </button>
+                    ) : null}
+                  </div>
+                ) : null}
               </div>
+
+              {showNav ? (
+                <div className="min-w-0 w-full lg:w-[min(28rem,calc(100%-18rem))] lg:shrink-0">
+                  <label
+                    htmlFor="nav-jump"
+                    className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.12em] text-brand-800"
+                  >
+                    Jump to screen
+                  </label>
+                  <div className="relative">
+                    <select
+                      id="nav-jump"
+                      value={activeTab}
+                      onChange={(e) => onTabChange(e.target.value)}
+                      aria-label="Jump to screen"
+                      className="w-full cursor-pointer appearance-none rounded-xl border-2 border-brand-400/80 bg-gradient-to-b from-white to-brand-50/50 py-3 pl-4 pr-11 text-sm font-semibold text-zinc-900 shadow-md shadow-brand-900/[0.06] outline-none transition-[box-shadow,border-color] hover:border-brand-500 focus:border-brand-600 focus:ring-4 focus:ring-brand-500/20 sm:text-[15px]"
+                    >
+                      {WORKSPACE_GROUPS.map((g) => (
+                        <optgroup key={g.id} label={g.label}>
+                          {g.tabs.map((t) => (
+                            <option key={t.id} value={t.id}>
+                              {t.label}
+                            </option>
+                          ))}
+                        </optgroup>
+                      ))}
+                    </select>
+                    <ChevronDownIcon className="pointer-events-none absolute right-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-brand-700" />
+                  </div>
+                </div>
+              ) : null}
+
               {user ? (
-                <div className="flex shrink-0 items-center gap-2 text-xs font-medium text-zinc-500">
-                  <span className="max-w-[7rem] truncate sm:max-w-[12rem]" title={user.full_name || user.email}>
+                <div className="hidden shrink-0 items-center gap-2 text-xs font-medium text-zinc-500 lg:flex">
+                  <span className="max-w-[12rem] truncate" title={user.full_name || user.email}>
+                    {user.full_name || user.email}
+                  </span>
+                  {onSignOut ? (
+                    <button
+                      type="button"
+                      onClick={onSignOut}
+                      className="rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-zinc-700 hover:bg-zinc-50"
+                    >
+                      Sign out
+                    </button>
+                  ) : null}
+                </div>
+              ) : null}
+
+              {user && showNav ? (
+                <div className="flex shrink-0 items-center justify-between gap-2 border-t border-zinc-100 pt-3 text-xs font-medium text-zinc-500 lg:hidden">
+                  <span className="max-w-[14rem] truncate" title={user.full_name || user.email}>
                     {user.full_name || user.email}
                   </span>
                   {onSignOut ? (
@@ -151,73 +163,6 @@ export default function AppShell({ children, activeTab, onTabChange, user, onSig
                 </div>
               ) : null}
             </div>
-
-            {typeof activeTab === "string" && onTabChange ? (
-              <nav
-                className="-mx-4 mt-3 border-t border-zinc-200/80 px-4 pb-3 pt-3 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8"
-                aria-label="Workspace"
-              >
-                <WorkflowStrip activeTab={activeTab} onTabChange={onTabChange} />
-
-                <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
-                  All tools
-                </p>
-
-                {/* Level 1: area */}
-                <div className="flex flex-wrap gap-2">
-                  {WORKSPACE_GROUPS.map((g) => {
-                    const isActiveGroup = g.id === currentGroup.id;
-                    return (
-                      <button
-                        key={g.id}
-                        type="button"
-                        onClick={() => {
-                          if (g.tabs.some((t) => t.id === activeTab)) return;
-                          onTabChange(g.tabs[0].id);
-                        }}
-                        title={g.hint}
-                        className={`rounded-xl border px-3 py-2 text-left transition-colors sm:min-w-[8.5rem] ${
-                          isActiveGroup
-                            ? "border-brand-300 bg-brand-50 text-brand-950 ring-1 ring-brand-200/80"
-                            : "border-zinc-200/90 bg-zinc-50/80 text-zinc-600 hover:border-zinc-300 hover:bg-white"
-                        }`}
-                      >
-                        <span className="block text-xs font-bold tracking-tight">{g.label}</span>
-                        <span className="mt-0.5 block text-[10px] font-medium leading-snug text-zinc-500">
-                          {g.hint}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* Level 2: screens inside the selected area */}
-                <div className="mt-3">
-                  <p className="mb-2 text-[10px] font-medium uppercase tracking-wide text-zinc-400">
-                    In “{currentGroup.label}” — pick a screen
-                  </p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {currentGroup.tabs.map((t) => {
-                      const on = activeTab === t.id;
-                      return (
-                        <button
-                          key={t.id}
-                          type="button"
-                          onClick={() => onTabChange(t.id)}
-                          className={`rounded-full px-3 py-2 text-left text-xs font-semibold transition-all duration-200 sm:text-sm ${
-                            on
-                              ? "bg-white text-zinc-900 shadow-card-sm ring-1 ring-zinc-200/90"
-                              : "bg-zinc-100/80 text-zinc-600 ring-1 ring-transparent hover:bg-white hover:text-zinc-900"
-                          }`}
-                        >
-                          {t.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              </nav>
-            ) : null}
           </div>
         </header>
 

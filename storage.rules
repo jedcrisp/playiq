@@ -5,10 +5,10 @@ service firebase.storage {
     match /users/{userId}/diagram_plays/{fileName} {
       // Download URLs include an access token; reads still require the object to exist.
       allow read: if resource != null;
+      // Do not require contentType in rules — SDK/metadata can omit it and .matches() would deny.
       allow create: if request.auth != null
         && request.auth.uid == userId
-        && request.resource.size < 3 * 1024 * 1024
-        && request.resource.contentType.matches('image/.*');
+        && request.resource.size < 4 * 1024 * 1024;
       allow delete: if request.auth != null && request.auth.uid == userId;
     }
   }
